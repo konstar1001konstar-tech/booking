@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7">
+<title>Анна | Маникюр: онлайн-запись</title>
+
+<!-- Нужен только внутри Telegram, вне Telegram ничего не ломает -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = { theme: { extend: { colors: { tg: '#3390ec', ios: '#f2f2f7' } } } };
+</script>
+
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+  button { -webkit-appearance: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  /* Модальное окно: плавный выезд снизу */
+  .modal { visibility: hidden; transition: visibility 0s linear .32s; }
+  .modal.open { visibility: visible; transition-delay: 0s; }
+  .backdrop { opacity: 0; transition: opacity .3s ease; }
+  .modal.open .backdrop { opacity: 1; }
+  .sheet { transform: translateY(100%); transition: transform .32s cubic-bezier(.32, .72, 0, 1); }
+  .modal.open .sheet { transform: none; }
+
+  /* Галочка успеха */
+  .check-circle { stroke-dasharray: 166; stroke-dashoffset: 166; animation: draw .6s .1s ease forwards; }
+  .check-mark { stroke-dasharray: 48; stroke-dashoffset: 48; animation: draw .35s .6s ease forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .modal, .backdrop, .sheet { transition: none; }
+    .check-circle, .check-mark { animation: none; stroke-dashoffset: 0; }
+  }
+</style>
+</head>
+
+<body class="bg-ios text-neutral-900 antialiased">
+
+  <main class="mx-auto max-w-md pb-[calc(32px+env(safe-area-inset-bottom))]">
+
+    <!-- Шапка мастера -->
+    <header class="px-5 pb-6 pt-[max(28px,env(safe-area-inset-top))] text-center">
+      <!-- Замените src на фото мастера, например src="anna.jpg" -->
+      <img class="mx-auto h-24 w-24 rounded-full bg-neutral-200 object-cover" alt="Анна, мастер маникюра"
+           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='rgb(222,236,250)'/%3E%3Ccircle cx='48' cy='38' r='16' fill='rgb(163,201,240)'/%3E%3Cpath d='M16 96c0-22 14-36 32-36s32 14 32 36z' fill='rgb(163,201,240)'/%3E%3C/svg%3E">
+      <h1 class="mt-4 text-2xl font-semibold tracking-tight">Анна | Маникюр</h1>
+      <p class="mt-1 text-[15px] text-neutral-500">Аккуратно, стерильно, без спешки</p>
+      <p class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm text-neutral-600">
+        <span class="h-2 w-2 rounded-full bg-green-500"></span>Есть свободные окна на этой неделе
+      </p>
+    </header>
+
+    <!-- Услуги -->
+    <section class="px-4" aria-labelledby="services-title">
+      <h2 id="services-title" class="px-1 pb-2 text-sm font-medium text-neutral-500">Услуги</h2>
+      <div id="services" class="space-y-3"></div>
+    </section>
+  </main>
+
+  <!-- Окно записи -->
+  <div id="modal" class="modal fixed inset-0 z-50" aria-hidden="true">
+    <div class="backdrop absolute inset-0 bg-black/40" data-close></div>
+
+    <section id="sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="sheet-title"
+             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-white outline-none">
+
+      <!-- Форма -->
+      <div id="form-view" class="overflow-y-auto px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
+
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 id="sheet-title" class="text-xl font-semibold">Запись на приём</h2>
+            <p id="sheet-service" class="mt-0.5 text-sm text-neutral-500"></p>
+          </div>
+          <button type="button" data-close aria-label="Закрыть"
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-neutral-500 active:opacity-70">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg>
+          </button>
+        </div>
+
+        <div class="mt-6 flex items-baseline justify-between">
+          <h3 class="text-sm font-medium text-neutral-500">Дата</h3>
+          <span id="month" class="text-sm text-neutral-500"></span>
+        </div>
+        <div id="dates" class="no-scrollbar -mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-1"></div>
+
+        <h3 class="mt-6 text-sm font-medium text-neutral-500">Время</h3>
+        <div id="slots" class="mt-2 grid grid-cols-4 gap-2"></div>
+        <p id="slot-err" class="mt-1.5 hidden text-sm text-red-500">Выберите время</p>
+
+        <label class="mt-6 block">
+          <span class="text-sm font-medium text-neutral-500">Ваше имя</span>
+          <input id="name" type="text" autocomplete="name" placeholder="Например, Мария"
+                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+        <p id="name-err" class="mt-1.5 hidden text-sm text-red-500">Введите имя</p>
+
+        <label class="mt-4 block">
+          <span class="text-sm font-medium text-neutral-500">Номер телефона</span>
+          <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 (999) 123-45-67"
+                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+        <p id="phone-err" class="mt-1.5 hidden text-sm text-red-500">Введите номер полностью</p>
+
+        <button id="confirm" type="button"
+                class="mt-6 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">
+          Подтвердить запись
+        </button>
+        <p id="send-err" class="mt-3 hidden text-center text-sm text-red-500" role="alert"></p>
+      </div>
+
+      <!-- Успех -->
+      <div id="done-view" class="hidden overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-8 text-center">
+        <svg class="mx-auto" width="88" height="88" viewBox="0 0 56 56" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle class="check-circle" cx="28" cy="28" r="26" stroke="#34c759" stroke-width="3"/>
+          <path class="check-mark" d="M17 29l8 8 14-16" stroke="#34c759" stroke-width="3.5"/>
+        </svg>
+        <h2 class="mt-5 text-2xl font-semibold">Вы записаны!</h2>
+        <p id="done-text" class="mt-2 text-[17px] text-neutral-600"></p>
+
+        <dl class="mt-6 space-y-3 rounded-2xl bg-ios p-4 text-left text-[15px]">
+          <div class="flex justify-between gap-4"><dt class="text-neutral-500">Услуга</dt><dd id="sum-service" class="text-right font-medium"></dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-neutral-500">Дата</dt><dd id="sum-date" class="text-right font-medium"></dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-neutral-500">Время</dt><dd id="sum-time" class="text-right font-medium"></dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-neutral-500">Стоимость</dt><dd id="sum-price" class="text-right font-medium"></dd></div>
+        </dl>
+
+        <button id="done-btn" type="button"
+                class="mt-6 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Готово</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+  // ---------- Данные ----------
+  const SERVICES = [
+    { id: 1, name: 'Комбинированный маникюр', price: 1500, dur: '1,5 ч' },
+    { id: 2, name: 'Маникюр с гель-лаком',    price: 2200, dur: '2 ч'   },
+    { id: 3, name: 'Наращивание ногтей',      price: 3500, dur: '3 ч'   }
+  ];
+  const SLOTS = ['10:00', '12:30', '15:00', '18:00'];
+
+  // ---------- Telegram ----------
+  // Внимание: всё, что лежит в этом файле, видно любому, кто откроет страницу.
+  const BOT_TOKEN = '8812903931:AAGEJ1tiwzvdXI-1kmnmOJn2D2bOd6fX4U0';
+  const CHAT_ID = 1777553103;
+
+  // Ближайшие 14 дней
+  const DAYS = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i); return d;
+  });
+
+  // ---------- Помощники ----------
+  const $ = (s) => document.querySelector(s);
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const fmtPrice = (n) => n.toLocaleString('ru-RU') + '\u00a0₽';
+  const fmtWeekday = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' });
+  const fmtMonth = new Intl.DateTimeFormat('ru-RU', { month: 'long' });
+  const fmtFull = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const modal = $('#modal'), sheet = $('#sheet');
+  const formView = $('#form-view'), doneView = $('#done-view');
+  const datesEl = $('#dates'), slotsEl = $('#slots'), monthEl = $('#month');
+  const nameEl = $('#name'), phoneEl = $('#phone');
+  const nameErr = $('#name-err'), phoneErr = $('#phone-err'), slotErr = $('#slot-err');
+
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    const u = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (u && u.first_name) nameEl.value = u.first_name;
+  }
+
+  // Доступность: воскресенье выходной, прошедшее время и «занятые» слоты недоступны
+  function slotFree(date, i) {
+    if (date.getDay() === 0) return false;
+    const [h, m] = SLOTS[i].split(':').map(Number);
+    const t = new Date(date); t.setHours(h, m, 0, 0);
+    if (t <= new Date()) return false;
+    return (date.getDate() + i) % 5 !== 0;
+  }
+  const dayFree = (date) => SLOTS.some((_, i) => slotFree(date, i));
+
+  // ---------- Услуги ----------
+  $('#services').innerHTML = SERVICES.map((s) => `
+    <article class="rounded-2xl bg-white p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-[17px] font-semibold leading-snug">${s.name}</h3>
+          <p class="mt-1 text-sm text-neutral-500">${s.dur}</p>
+        </div>
+        <p class="whitespace-nowrap text-[17px] font-semibold">${fmtPrice(s.price)}</p>
+      </div>
+      <button type="button" data-service="${s.id}"
+              class="mt-4 w-full rounded-xl bg-tg/10 py-3 text-[15px] font-semibold text-tg active:bg-tg/20">Записаться</button>
+    </article>`).join('');
+
+  $('#services').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-service]');
+    if (btn) openModal(SERVICES.find((s) => s.id === +btn.dataset.service), btn);
+  });
+
+  // ---------- Окно записи ----------
+  let state = { service: null, date: null, slot: null };
+  let lastTrigger = null;
+
+  function renderDates() {
+    const x = datesEl.scrollLeft;
+    datesEl.innerHTML = '';
+    DAYS.forEach((d) => {
+      const free = dayFree(d);
+      const sel = +state.date === +d;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.disabled = !free;
+      b.setAttribute('aria-pressed', sel);
+      b.className = 'flex h-[68px] w-14 shrink-0 flex-col items-center justify-center rounded-2xl transition-colors '
+        + (sel ? 'bg-tg text-white' : 'bg-ios text-neutral-900') + (free ? '' : ' opacity-40');
+      b.innerHTML = `<span class="text-xs ${sel ? 'text-white/80' : 'text-neutral-500'}">${cap(fmtWeekday.format(d)).replace('.', '')}</span>`
+        + `<span class="mt-0.5 text-lg font-semibold">${d.getDate()}</span>`;
+      b.addEventListener('click', () => {
+        state.date = d; state.slot = null;
+        renderDates(); renderSlots();
+      });
+      datesEl.appendChild(b);
+    });
+    datesEl.scrollLeft = x;
+    monthEl.textContent = cap(fmtMonth.format(state.date));
+  }
+
+  function renderSlots() {
+    slotsEl.innerHTML = '';
+    SLOTS.forEach((t, i) => {
+      const free = slotFree(state.date, i);
+      const sel = state.slot === t;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = t;
+      b.disabled = !free;
+      b.setAttribute('aria-pressed', sel);
+      b.className = 'rounded-xl py-3 text-[15px] font-medium transition-colors '
+        + (sel ? 'bg-tg text-white' : free ? 'bg-ios text-neutral-900' : 'bg-ios text-neutral-300 line-through');
+      b.addEventListener('click', () => {
+        state.slot = t;
+        slotErr.classList.add('hidden');
+        renderSlots();
+      });
+      slotsEl.appendChild(b);
+    });
+  }
+
+  function openModal(service, trigger) {
+    lastTrigger = trigger;
+    state = { service, date: DAYS.find(dayFree) || DAYS[0], slot: null };
+    $('#sheet-service').textContent = `${service.name}, ${fmtPrice(service.price)}, ${service.dur}`;
+    formView.classList.remove('hidden');
+    doneView.classList.add('hidden');
+    [nameErr, phoneErr, slotErr].forEach((el) => el.classList.add('hidden'));
+    renderDates();
+    renderSlots();
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    sheet.focus({ preventScroll: true });
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (lastTrigger) lastTrigger.focus({ preventScroll: true });
+  }
+
+  modal.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
+
+  // ---------- Поля ввода ----------
+  phoneEl.addEventListener('input', () => {
+    let d = phoneEl.value.replace(/\D/g, '');
+    if (d[0] === '7' || d[0] === '8') d = d.slice(1);
+    d = d.slice(0, 10);
+    let out = '+7 (' + d.slice(0, 3);
+    if (d.length > 3) out += ') ' + d.slice(3, 6);
+    if (d.length > 6) out += '-' + d.slice(6, 8);
+    if (d.length > 8) out += '-' + d.slice(8, 10);
+    phoneEl.value = d.length ? out : '';
+    phoneEl.classList.remove('ring-red-400');
+    phoneErr.classList.add('hidden');
+  });
+
+  nameEl.addEventListener('input', () => {
+    nameEl.classList.remove('ring-red-400');
+    nameErr.classList.add('hidden');
+  });
+
+  // ---------- Отправка в Telegram ----------
+  // В режиме Markdown символы _ * ` [ в данных клиента нужно экранировать
+  const escMd = (s) => String(s).replace(/([_*`\[])/g, '\\$1');
+
+  function buildMessage({ service, date, time, name, phone }) {
+    return '🔔 *Новая запись!*\n\n'
+      + `💅 Услуга: ${service.name}\n`
+      + `💰 Стоимость: ${fmtPrice(service.price)}\n`
+      + `📅 Дата: ${date}\n`
+      + `⏰ Время: ${time}\n`
+      + `👤 Имя: ${escMd(name)}\n`
+      + `📞 Телефон: ${escMd(phone)}`;
+  }
+
+  async function sendToTelegram(text) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'Markdown' }),
+        signal: ctrl.signal
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.description || 'Ошибка Telegram API');
+      return data;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // ---------- Подтверждение ----------
+  const confirmBtn = $('#confirm');
+  const sendErr = $('#send-err');
+
+  confirmBtn.addEventListener('click', async () => {
+    if (confirmBtn.disabled) return;
+    sendErr.classList.add('hidden');
+    const name = nameEl.value.trim();
+    const phoneOk = phoneEl.value.replace(/\D/g, '').length === 11;
+    const nameOk = name.length >= 2;
+    const slotOk = !!state.slot;
+    let firstBad = null;
+
+    slotErr.classList.toggle('hidden', slotOk);
+    if (!slotOk) firstBad = slotsEl;
+
+    nameErr.classList.toggle('hidden', nameOk);
+    nameEl.classList.toggle('ring-red-400', !nameOk);
+    if (!nameOk && !firstBad) firstBad = nameEl;
+
+    phoneErr.classList.toggle('hidden', phoneOk);
+    phoneEl.classList.toggle('ring-red-400', !phoneOk);
+    if (!phoneOk && !firstBad) firstBad = phoneEl;
+
+    if (firstBad) {
+      firstBad.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (firstBad !== slotsEl) firstBad.focus({ preventScroll: true });
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      return;
+    }
+
+    const s = state.service;
+    const dateText = cap(fmtFull.format(state.date));
+    const time = state.slot;
+    const phone = phoneEl.value;
+    const label = confirmBtn.textContent;
+
+    // Кнопка блокируется на время отправки
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Отправка...';
+    confirmBtn.classList.add('opacity-60');
+
+    try {
+      await sendToTelegram(buildMessage({ service: s, date: dateText, time: time, name: name, phone: phone }));
+
+      // Успех: окно подтверждения для клиента
+      $('#done-text').textContent = `${name}, ждём вас в ${time}`;
+      $('#sum-service').textContent = s.name;
+      $('#sum-date').textContent = dateText;
+      $('#sum-time').textContent = time;
+      $('#sum-price').textContent = fmtPrice(s.price);
+
+      formView.classList.add('hidden');
+      doneView.classList.remove('hidden');
+      doneView.scrollTop = 0;
+
+      // Очищаем поля формы
+      nameEl.value = '';
+      phoneEl.value = '';
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch (err) {
+      console.error(err);
+      sendErr.textContent = 'Не удалось отправить запись. Проверьте интернет и попробуйте ещё раз. ('
+        + (err && err.message ? err.message : 'неизвестная ошибка') + ')';
+      sendErr.classList.remove('hidden');
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = label;
+      confirmBtn.classList.remove('opacity-60');
+    }
+  });
+
+  $('#done-btn').addEventListener('click', closeModal);
+</script>
+</body>
+</html>
