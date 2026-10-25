@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f2f2f7">
+<meta name="theme-color" content="#fbf8f5">
 <title>Анна | Маникюр: онлайн-запись</title>
 
 <!-- Нужен только внутри Telegram, вне Telegram ничего не ломает -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>
-  tailwind.config = { theme: { extend: { colors: { tg: '#3390ec', ios: '#f2f2f7' } } } };
+  tailwind.config = { theme: { extend: { colors: { tg: '#5b3a5e', ios: '#f3e9e6', milk: '#fbf8f5' } } } };
 </script>
 
 <style>
@@ -36,30 +36,45 @@
     .modal, .backdrop, .sheet { transition: none; }
     .check-circle, .check-mark { animation: none; stroke-dashoffset: 0; }
   }
+
+  .display { font-family: ui-serif, "New York", Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+  .rise { animation: rise .7s cubic-bezier(.2, .7, .2, 1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  @media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
 </style>
 </head>
 
-<body class="bg-ios text-neutral-900 antialiased">
+<body class="bg-milk text-[#2a2024] antialiased">
 
   <main class="mx-auto max-w-md pb-[calc(32px+env(safe-area-inset-bottom))]">
 
     <!-- Шапка мастера -->
-    <header class="px-5 pb-6 pt-[max(28px,env(safe-area-inset-top))] text-center">
-      <!-- Замените src на фото мастера, например src="anna.jpg" -->
-      <img class="mx-auto h-24 w-24 rounded-full bg-neutral-200 object-cover" alt="Анна, мастер маникюра"
-           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='rgb(222,236,250)'/%3E%3Ccircle cx='48' cy='38' r='16' fill='rgb(163,201,240)'/%3E%3Cpath d='M16 96c0-22 14-36 32-36s32 14 32 36z' fill='rgb(163,201,240)'/%3E%3C/svg%3E">
-      <h1 class="mt-4 text-2xl font-semibold tracking-tight">Анна | Маникюр</h1>
-      <p class="mt-1 text-[15px] text-neutral-500">Аккуратно, стерильно, без спешки</p>
-      <p class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm text-neutral-600">
-        <span class="h-2 w-2 rounded-full bg-green-500"></span>Есть свободные окна на этой неделе
-      </p>
+    <header>
+      <!-- Фото задаётся в панели мастера (ссылка на фото) -->
+      <img id="master-photo" class="h-[52dvh] max-h-[440px] min-h-[300px] w-full rounded-b-[36px] bg-ios object-cover" alt="Анна, мастер маникюра"
+           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 120'%3E%3Crect width='96' height='120' fill='rgb(236,222,218)'/%3E%3Ccircle cx='48' cy='46' r='17' fill='rgb(206,182,180)'/%3E%3Cpath d='M14 120c0-26 15-42 34-42s34 16 34 42z' fill='rgb(206,182,180)'/%3E%3C/svg%3E">
+      <div class="rise px-6 pt-6 text-center">
+        <h1 id="master-name" class="display text-[32px] leading-tight">Анна | Маникюр</h1>
+        <p id="master-desc" class="mt-2 text-[16px] text-neutral-500">Аккуратно, стерильно, без спешки</p>
+        <p class="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm text-neutral-600">
+          <span class="h-2 w-2 rounded-full bg-green-500"></span>Есть свободные окна на этой неделе
+        </p>
+      </div>
     </header>
 
-    <!-- Услуги -->
-    <section class="px-4" aria-labelledby="services-title">
-      <h2 id="services-title" class="px-1 pb-2 text-sm font-medium text-neutral-500">Услуги</h2>
-      <div id="services" class="space-y-3"></div>
+    <!-- Работы мастера -->
+    <section id="gallery" class="rise mt-8 hidden" style="animation-delay:.1s" aria-labelledby="gallery-title">
+      <h2 id="gallery-title" class="display px-6 pb-3 text-[22px]">Работы</h2>
+      <div id="gallery-list" class="no-scrollbar flex snap-x gap-3 overflow-x-auto px-6"></div>
     </section>
+
+    <!-- Услуги -->
+    <section class="rise mt-8 px-4" style="animation-delay:.18s" aria-labelledby="services-title">
+      <h2 id="services-title" class="display px-2 pb-3 text-[22px]">Услуги</h2>
+      <div id="services" class="divide-y divide-ios rounded-3xl bg-white px-5"></div>
+    </section>
+    <button id="open-settings" type="button"
+            class="mx-auto mt-10 block px-4 py-3 text-sm text-neutral-400 active:text-neutral-600">⚙️ Настроить профиль (для мастера)</button>
   </main>
 
   <!-- Окно записи -->
@@ -137,6 +152,80 @@
     </section>
   </div>
 
+<!-- Панель мастера -->
+  <div id="panel" class="modal fixed inset-0 z-50" aria-hidden="true">
+    <div class="backdrop absolute inset-0 bg-black/40" data-close></div>
+    <section id="panel-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="panel-title"
+             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-white outline-none">
+      <div class="overflow-y-auto px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
+
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 id="panel-title" class="text-xl font-semibold">Панель мастера</h2>
+            <p class="mt-0.5 text-sm text-neutral-500">Настройки хранятся в этом браузере</p>
+          </div>
+          <button type="button" data-close aria-label="Закрыть"
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-neutral-500 active:opacity-70">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg>
+          </button>
+        </div>
+
+        <label class="mt-5 block">
+          <span class="text-sm font-medium text-neutral-500">Имя и специализация</span>
+          <input id="p-name" type="text" maxlength="60" placeholder="Анна | Маникюр"
+                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+        <label class="mt-4 block">
+          <span class="text-sm font-medium text-neutral-500">Описание или статус</span>
+          <input id="p-desc" type="text" maxlength="120" placeholder="Аккуратно, стерильно, без спешки"
+                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+        <label class="mt-4 block">
+          <span class="text-sm font-medium text-neutral-500">Ссылка на фото (необязательно)</span>
+          <input id="p-photo" type="url" inputmode="url" placeholder="https://..."
+                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+        <label class="mt-4 block">
+          <span class="text-sm font-medium text-neutral-500">Telegram Chat ID мастера</span>
+          <input id="p-chat" type="text" inputmode="numeric" placeholder="Например, 123456789"
+                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+          <span class="mt-1.5 block text-xs text-neutral-500">Свой ID покажет бот @userinfobot. Перед этим нужно нажать Start у бота этой страницы.</span>
+        </label>
+
+        <label class="mt-4 block">
+          <span class="text-sm font-medium text-neutral-500">Фото работ (до 8 ссылок, каждая с новой строки)</span>
+          <textarea id="p-gallery" rows="3" placeholder="https://..."
+                    class="mt-2 w-full resize-none rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40"></textarea>
+        </label>
+
+        <h3 class="mt-6 text-sm font-medium text-neutral-500">Услуги</h3>
+        <div id="svc-list" class="mt-2 space-y-2"></div>
+        <button id="svc-add" type="button"
+                class="mt-2 w-full rounded-xl bg-tg/10 py-3 text-[15px] font-semibold text-tg active:bg-tg/20">Добавить услугу</button>
+
+        <label class="mt-6 block">
+          <span class="text-sm font-medium text-neutral-500">Время для записи (через запятую)</span>
+          <input id="p-slots" type="text" placeholder="10:00, 12:30, 15:00, 18:00"
+                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+
+        <p id="panel-err" class="mt-3 hidden text-sm text-red-500" role="alert"></p>
+        <button id="p-save" type="button"
+                class="mt-5 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Сохранить настройки</button>
+
+        <div id="link-block" class="mt-6 hidden rounded-2xl bg-ios p-4">
+          <h3 class="text-sm font-medium">Персональная ссылка для клиентов</h3>
+          <textarea id="p-link" readonly rows="4"
+                    class="mt-2 w-full resize-none break-all rounded-xl bg-white p-3 text-xs text-neutral-600 outline-none"></textarea>
+          <button id="p-copy" type="button"
+                  class="mt-2 w-full rounded-xl bg-white py-3 text-[15px] font-semibold text-tg active:opacity-70">📋 Скопировать ссылку для клиентов</button>
+          <p class="mt-2 text-xs text-neutral-500">Клиенты увидят страницу без панели настроек. Чтобы изменить данные, откройте адрес без «?config=».</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
 <script>
   // ---------- Данные ----------
   const SERVICES = [
@@ -144,12 +233,12 @@
     { id: 2, name: 'Маникюр с гель-лаком',    price: 2200, dur: '2 ч'   },
     { id: 3, name: 'Наращивание ногтей',      price: 3500, dur: '3 ч'   }
   ];
-  const SLOTS = ['10:00', '12:30', '15:00', '18:00'];
+  let SLOTS = ['10:00', '12:30', '15:00', '18:00'];
 
   // ---------- Telegram ----------
   // Внимание: всё, что лежит в этом файле, видно любому, кто откроет страницу.
   const BOT_TOKEN = '8812903931:AAGEJ1tiwzvdXI-1kmnmOJn2D2bOd6fX4U0';
-  const CHAT_ID = 1777553103;
+  const CHAT_ID = 1777553103; // Chat ID по умолчанию, пока мастер не задал свой
 
   // Ближайшие 14 дней
   const DAYS = Array.from({ length: 14 }, (_, i) => {
@@ -188,24 +277,219 @@
   }
   const dayFree = (date) => SLOTS.some((_, i) => slotFree(date, i));
 
-  // ---------- Услуги ----------
-  $('#services').innerHTML = SERVICES.map((s) => `
-    <article class="rounded-2xl bg-white p-4">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h3 class="text-[17px] font-semibold leading-snug">${s.name}</h3>
-          <p class="mt-1 text-sm text-neutral-500">${s.dur}</p>
-        </div>
-        <p class="whitespace-nowrap text-[17px] font-semibold">${fmtPrice(s.price)}</p>
+  // ---------- Настройки мастера ----------
+  const STORE_KEY = 'masterConfig:v1';
+  const DEFAULTS = {
+    name: 'Анна | Маникюр', desc: 'Аккуратно, стерильно, без спешки', photo: '', chatId: String(CHAT_ID),
+    services: SERVICES.map((s) => ({ name: s.name, price: s.price, dur: s.dur })),
+    slots: SLOTS.slice(), gallery: []
+  };
+  const DEFAULT_AVATAR = $('#master-photo').src;
+  const clientMode = new URLSearchParams(location.search).has('config');
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // Время: "10:00, 12:30" -> ['10:00', '12:30'] или null, если есть ошибка
+  function parseSlots(text) {
+    const out = [];
+    for (const raw of String(text).split(/[,;\s]+/)) {
+      if (!raw) continue;
+      const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(raw);
+      if (!m) return null;
+      const t = m[1].padStart(2, '0') + ':' + m[2];
+      if (!out.includes(t)) out.push(t);
+    }
+    return out.length && out.length <= 12 ? out.sort() : null;
+  }
+
+  // Приводит настройки к безопасному виду: данные из ссылки нельзя считать надёжными
+  function clean(r) {
+    try {
+      const str = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+      const c = { name: str(r.name, 60), desc: str(r.desc, 120), photo: str(r.photo, 500), chatId: str(r.chatId, 20), services: [], slots: parseSlots(r.slots.join(',')),
+        gallery: (Array.isArray(r.gallery) ? r.gallery : []).map((u) => str(u, 500)).filter((u) => /^https?:\/\//i.test(u)).slice(0, 8) };
+      if (!c.name || !/^-?\d{5,18}$/.test(c.chatId)) return null;
+      if (!/^https?:\/\//i.test(c.photo)) c.photo = '';
+      for (const s of r.services.slice(0, 20)) {
+        const price = Math.round(Number(s.price));
+        if (str(s.name, 60) && price >= 0 && price <= 10000000) c.services.push({ name: str(s.name, 60), price: price, dur: str(s.dur, 20) });
+      }
+      return c.services.length && c.slots ? c : null;
+    } catch (e) { return null; }
+  }
+
+  // Кодирование настроек в ссылку (base64 без символов + / =)
+  const toB64 = (obj) => {
+    let b = '';
+    new TextEncoder().encode(JSON.stringify(obj)).forEach((x) => { b += String.fromCharCode(x); });
+    return btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+  const fromB64 = (s) => {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0))));
+  };
+  const linkFor = (c) => location.href.split('#')[0].split('?')[0] + '?config=' +
+    toB64({ n: c.name, d: c.desc, p: c.photo, c: c.chatId, s: c.services.map((s) => [s.name, s.price, s.dur]), t: c.slots, g: c.gallery });
+
+  function loadConfig() {
+    try {
+      if (clientMode) {
+        const o = fromB64(new URLSearchParams(location.search).get('config'));
+        return clean({ name: o.n, desc: o.d, photo: o.p, chatId: o.c, slots: o.t, gallery: o.g, services: o.s.map((x) => ({ name: x[0], price: x[1], dur: x[2] })) });
+      }
+      return clean(JSON.parse(localStorage.getItem(STORE_KEY))) || DEFAULTS;
+    } catch (e) { return clientMode ? null : DEFAULTS; }
+  }
+
+  // Подставляет настройки на страницу
+  let config = loadConfig() || DEFAULTS;
+  function applyConfig(c) {
+    config = c;
+    SLOTS = c.slots;
+    document.title = c.name + ': онлайн-запись';
+    $('#master-name').textContent = c.name;
+    $('#master-desc').textContent = c.desc;
+    const img = $('#master-photo');
+    img.alt = c.name;
+    img.onerror = () => { img.onerror = null; img.src = DEFAULT_AVATAR; };
+    img.src = c.photo || DEFAULT_AVATAR;
+    $('#services').innerHTML = c.services.map((s, i) => `
+    <article class="flex items-center justify-between gap-4 py-4">
+      <div class="min-w-0">
+        <h3 class="text-[17px] font-semibold leading-snug">${esc(s.name)}</h3>
+        ${s.dur ? `<p class="mt-0.5 text-sm text-neutral-500">${esc(s.dur)}</p>` : ''}
       </div>
-      <button type="button" data-service="${s.id}"
-              class="mt-4 w-full rounded-xl bg-tg/10 py-3 text-[15px] font-semibold text-tg active:bg-tg/20">Записаться</button>
+      <div class="flex shrink-0 flex-col items-end gap-2">
+        <p class="whitespace-nowrap text-[17px] font-semibold">${fmtPrice(s.price)}</p>
+        <button type="button" data-service="${i}"
+                class="rounded-full bg-tg px-4 py-2 text-sm font-semibold text-white active:opacity-80">Записаться</button>
+      </div>
     </article>`).join('');
+    $('#gallery').classList.toggle('hidden', !c.gallery.length);
+    $('#gallery-list').innerHTML = c.gallery.map((u) => `<img src="${esc(u)}" alt="Работа мастера" loading="lazy" onerror="this.remove()" class="h-48 w-36 shrink-0 snap-start rounded-2xl bg-ios object-cover">`).join('');
+  }
+
+  if (clientMode && !loadConfig()) {
+    // Ссылка повреждена: записаться нельзя
+    $('#services').innerHTML = '<p class="rounded-2xl bg-white p-4 text-center text-neutral-500">Ссылка повреждена. Попросите мастера прислать её ещё раз.</p>';
+  } else {
+    applyConfig(config);
+  }
 
   $('#services').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-service]');
-    if (btn) openModal(SERVICES.find((s) => s.id === +btn.dataset.service), btn);
+    if (btn) openModal(config.services[+btn.dataset.service], btn);
   });
+
+  // ---------- Панель мастера ----------
+  const panel = $('#panel'), panelSheet = $('#panel-sheet'), svcList = $('#svc-list'), panelErr = $('#panel-err');
+  const settingsBtn = $('#open-settings');
+  const INP = 'min-w-0 rounded-xl bg-white px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40';
+  let draft = [];
+
+  const setSheet = (m, on) => {
+    m.classList.toggle('open', on);
+    m.setAttribute('aria-hidden', String(!on));
+    document.body.style.overflow = on ? 'hidden' : '';
+  };
+
+  function renderRows() {
+    svcList.innerHTML = draft.map((s, i) => `
+      <div class="rounded-xl bg-ios p-3" data-row="${i}">
+        <input data-k="name" value="${esc(s.name)}" maxlength="60" placeholder="Название услуги" class="${INP} w-full">
+        <div class="mt-2 flex gap-2">
+          <input data-k="price" value="${esc(s.price)}" inputmode="numeric" placeholder="Цена, ₽" class="${INP} flex-1">
+          <input data-k="dur" value="${esc(s.dur)}" maxlength="20" placeholder="Длительность" class="${INP} flex-1">
+          <button type="button" data-del="${i}" aria-label="Удалить услугу"
+                  class="shrink-0 rounded-xl bg-white px-4 text-red-500 active:opacity-70">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function readRows() {
+    svcList.querySelectorAll('[data-row]').forEach((r) => {
+      draft[+r.dataset.row] = {
+        name: r.querySelector('[data-k=name]').value,
+        price: r.querySelector('[data-k=price]').value,
+        dur: r.querySelector('[data-k=dur]').value
+      };
+    });
+  }
+
+  function fillPanel(c) {
+    $('#p-name').value = c.name;
+    $('#p-desc').value = c.desc;
+    $('#p-photo').value = c.photo;
+    $('#p-chat').value = c.chatId;
+    $('#p-slots').value = c.slots.join(', ');
+    $('#p-gallery').value = c.gallery.join('\n');
+    draft = c.services.map((s) => ({ name: s.name, price: String(s.price), dur: s.dur }));
+    renderRows();
+  }
+
+  function showLink(c) {
+    $('#link-block').classList.toggle('hidden', !c);
+    if (!c) return;
+    $('#p-link').value = linkFor(c);
+    $('#link-block').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  function hasSaved() {
+    try { return !!localStorage.getItem(STORE_KEY); } catch (e) { return false; }
+  }
+
+  function openPanel() {
+    fillPanel(config);
+    panelErr.classList.add('hidden');
+    showLink(hasSaved() ? config : null);
+    setSheet(panel, true);
+    panelSheet.focus({ preventScroll: true });
+  }
+  function closePanel() { setSheet(panel, false); settingsBtn.focus({ preventScroll: true }); }
+
+  if (clientMode) {
+    settingsBtn.remove(); // клиенту панель настроек не показываем
+  } else {
+    settingsBtn.addEventListener('click', openPanel);
+    panel.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closePanel(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) closePanel(); });
+
+    $('#svc-add').addEventListener('click', () => { readRows(); draft.push({ name: '', price: '', dur: '' }); renderRows(); });
+    svcList.addEventListener('click', (e) => {
+      const del = e.target.closest('[data-del]');
+      if (del) { readRows(); draft.splice(+del.dataset.del, 1); renderRows(); }
+    });
+
+    $('#p-save').addEventListener('click', () => {
+      readRows();
+      const fail = (msg) => { panelErr.textContent = msg; panelErr.classList.remove('hidden'); panelErr.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+      const photo = $('#p-photo').value.trim();
+      if (photo && !/^https?:\/\//i.test(photo)) return fail('Ссылка на фото должна начинаться с https://');
+      const services = draft.filter((s) => s.name.trim()).map((s) => ({ name: s.name, price: String(s.price).replace(/\s/g, '').replace(',', '.'), dur: s.dur }));
+      if (services.some((s) => s.price === '' || isNaN(s.price))) return fail('Укажите цену каждой услуги числом');
+      const gal = $('#p-gallery').value.split(/[\s,]+/).filter(Boolean);
+      if (gal.some((u) => !/^https?:\/\//i.test(u))) return fail('Ссылки на фото работ должны начинаться с https://');
+      const slots = parseSlots($('#p-slots').value);
+      if (!slots) return fail('Время укажите через запятую, например: 10:00, 12:30, 15:00');
+      const c = clean({ name: $('#p-name').value, desc: $('#p-desc').value, photo: photo, gallery: gal, chatId: $('#p-chat').value, services: services, slots: slots });
+      if (!c) return fail('Проверьте имя, Chat ID (только цифры) и наличие хотя бы одной услуги');
+
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(c)); } catch (e) { /* хранилище недоступно */ }
+      panelErr.classList.add('hidden');
+      applyConfig(c);   // страница обновляется сразу
+      fillPanel(c);
+      showLink(c);      // ссылка для клиентов
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    });
+
+    $('#p-copy').addEventListener('click', async () => {
+      const box = $('#p-link'), btn = $('#p-copy');
+      try { await navigator.clipboard.writeText(box.value); }
+      catch (e) { box.select(); box.setSelectionRange(0, box.value.length); document.execCommand('copy'); }
+      btn.textContent = '✓ Ссылка скопирована';
+      setTimeout(() => { btn.textContent = '📋 Скопировать ссылку для клиентов'; }, 2000);
+    });
+  }
 
   // ---------- Окно записи ----------
   let state = { service: null, date: null, slot: null };
@@ -259,7 +543,7 @@
   function openModal(service, trigger) {
     lastTrigger = trigger;
     state = { service, date: DAYS.find(dayFree) || DAYS[0], slot: null };
-    $('#sheet-service').textContent = `${service.name}, ${fmtPrice(service.price)}, ${service.dur}`;
+    $('#sheet-service').textContent = [service.name, fmtPrice(service.price), service.dur].filter(Boolean).join(', ');
     formView.classList.remove('hidden');
     doneView.classList.add('hidden');
     [nameErr, phoneErr, slotErr].forEach((el) => el.classList.add('hidden'));
@@ -306,7 +590,7 @@
 
   function buildMessage({ service, date, time, name, phone }) {
     return '🔔 *Новая запись!*\n\n'
-      + `💅 Услуга: ${service.name}\n`
+      + `💅 Услуга: ${escMd(service.name)}\n`
       + `💰 Стоимость: ${fmtPrice(service.price)}\n`
       + `📅 Дата: ${date}\n`
       + `⏰ Время: ${time}\n`
@@ -321,7 +605,7 @@
       const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'Markdown' }),
+        body: JSON.stringify({ chat_id: String(config.chatId), text: text, parse_mode: 'Markdown' }),
         signal: ctrl.signal
       });
       const data = await res.json();
