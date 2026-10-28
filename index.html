@@ -123,8 +123,14 @@
         </label>
         <p id="phone-err" class="mt-1.5 hidden text-sm text-red-500">Введите номер полностью</p>
 
-        <button id="confirm" type="button"
-                class="mt-6 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">
+        <div class="mt-6 flex items-start gap-3">
+          <input id="consent" type="checkbox" class="mt-0.5 h-6 w-6 shrink-0 accent-tg">
+          <label for="consent" class="text-sm leading-snug text-neutral-600">Нажимая кнопку, я даю согласие на обработку персональных данных и принимаю условия <button id="open-policy" type="button" class="font-medium text-tg underline underline-offset-2">Политики конфиденциальности</button></label>
+        </div>
+        <p id="consent-err" class="mt-1.5 hidden text-sm text-red-500">Отметьте согласие, чтобы продолжить</p>
+
+        <button id="confirm" type="button" disabled
+                class="mt-4 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50">
           Подтвердить запись
         </button>
         <p id="send-err" class="mt-3 hidden text-center text-sm text-red-500" role="alert"></p>
@@ -148,6 +154,32 @@
 
         <button id="done-btn" type="button"
                 class="mt-6 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Готово</button>
+      </div>
+    </section>
+  </div>
+
+<!-- Политика конфиденциальности -->
+  <div id="policy" class="modal fixed inset-0 z-[60]" aria-hidden="true">
+    <div class="backdrop absolute inset-0 bg-black/40" data-close-policy></div>
+    <section id="policy-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="policy-title"
+             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-3xl bg-white outline-none">
+      <div class="px-5 pt-3">
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
+        <h2 id="policy-title" class="text-xl font-semibold">Политика конфиденциальности</h2>
+      </div>
+      <div class="space-y-3 overflow-y-auto px-5 pb-4 pt-3 text-[15px] leading-relaxed text-neutral-700">
+        <p><b>1. Общие положения.</b> Настоящая Политика описывает, как обрабатываются персональные данные, которые вы вводите в форме онлайн-записи, в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
+        <p><b>2. Роль сайта и оператор данных.</b> Этот сайт является исключительно техническим интерфейсом для передачи заявки на запись. Оператором персональных данных выступает конкретный мастер, к которому осуществляется запись: именно он определяет цели и способы обработки данных и отвечает за них. Владелец сайта не является оператором этих данных, не создаёт базу клиентов и не хранит введённые данные на сайте.</p>
+        <p><b>3. Какие данные обрабатываются.</b> Имя, номер телефона, а также выбранные услуга, дата и время записи.</p>
+        <p><b>4. Цели обработки.</b> Оформление и подтверждение записи, связь с вами по вопросам записи (звонок или сообщение).</p>
+        <p><b>5. Передача данных.</b> Заявка передаётся мастеру в мессенджер Telegram. Данные не передаются другим третьим лицам, кроме случаев, предусмотренных законом.</p>
+        <p><b>6. Срок хранения.</b> Мастер хранит данные только то время, которое нужно для оказания услуги и связи с вами, после чего удаляет их.</p>
+        <p><b>7. Ваши права.</b> Вы вправе отозвать согласие, потребовать уточнения или удаления своих данных, обратившись напрямую к мастеру любым удобным способом, например через Telegram или по телефону, по которому он связывается с вами.</p>
+        <p><b>8. Согласие.</b> Отметив галочку и нажав «Подтвердить запись», вы даёте согласие на обработку указанных данных на условиях настоящей Политики. Согласие действует до его отзыва.</p>
+      </div>
+      <div class="px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-2">
+        <button id="policy-close" type="button" data-close-policy
+                class="w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Закрыть</button>
       </div>
     </section>
   </div>
@@ -547,6 +579,9 @@
     formView.classList.remove('hidden');
     doneView.classList.add('hidden');
     [nameErr, phoneErr, slotErr].forEach((el) => el.classList.add('hidden'));
+    consentEl.checked = false;
+    consentErr.classList.add('hidden');
+    syncConsent();
     renderDates();
     renderSlots();
     modal.classList.add('open');
@@ -595,7 +630,8 @@
       + `📅 Дата: ${date}\n`
       + `⏰ Время: ${time}\n`
       + `👤 Имя: ${escMd(name)}\n`
-      + `📞 Телефон: ${escMd(phone)}`;
+      + `📞 Телефон: ${escMd(phone)}\n`
+      + '✅ Согласие на обработку персональных данных: дано';
   }
 
   async function sendToTelegram(text) {
@@ -619,9 +655,37 @@
   // ---------- Подтверждение ----------
   const confirmBtn = $('#confirm');
   const sendErr = $('#send-err');
+  const consentEl = $('#consent'), consentErr = $('#consent-err');
+  const policy = $('#policy'), policySheet = $('#policy-sheet'), policyLink = $('#open-policy');
+  let sending = false;
+
+  // Кнопка активна только при отмеченном согласии (и не во время отправки)
+  const syncConsent = () => {
+    confirmBtn.disabled = sending || !consentEl.checked;
+    if (consentEl.checked) consentErr.classList.add('hidden');
+  };
+  consentEl.addEventListener('change', syncConsent);
+
+  function openPolicy() {
+    policy.classList.add('open');
+    policy.setAttribute('aria-hidden', 'false');
+    policySheet.focus({ preventScroll: true });
+  }
+  function closePolicy() {
+    policy.classList.remove('open');
+    policy.setAttribute('aria-hidden', 'true');
+    policyLink.focus({ preventScroll: true });
+  }
+  policyLink.addEventListener('click', (e) => { e.preventDefault(); openPolicy(); });
+  policy.addEventListener('click', (e) => { if (e.target.closest('[data-close-policy]')) closePolicy(); });
+  // Escape сначала закрывает политику, а не окно записи под ней
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && policy.classList.contains('open')) { e.stopImmediatePropagation(); closePolicy(); }
+  }, true);
 
   confirmBtn.addEventListener('click', async () => {
     if (confirmBtn.disabled) return;
+    if (!consentEl.checked) { consentErr.classList.remove('hidden'); return; }
     sendErr.classList.add('hidden');
     const name = nameEl.value.trim();
     const phoneOk = phoneEl.value.replace(/\D/g, '').length === 11;
@@ -654,6 +718,7 @@
     const label = confirmBtn.textContent;
 
     // Кнопка блокируется на время отправки
+    sending = true;
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Отправка...';
     confirmBtn.classList.add('opacity-60');
@@ -675,6 +740,7 @@
       // Очищаем поля формы
       nameEl.value = '';
       phoneEl.value = '';
+      consentEl.checked = false;
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (err) {
       console.error(err);
@@ -683,9 +749,10 @@
       sendErr.classList.remove('hidden');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
     } finally {
-      confirmBtn.disabled = false;
+      sending = false;
       confirmBtn.textContent = label;
       confirmBtn.classList.remove('opacity-60');
+      syncConsent();
     }
   });
 
