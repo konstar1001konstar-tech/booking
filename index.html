@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#fbf8f5">
 <title>Анна | Маникюр: онлайн-запись</title>
 
-<!-- Нужен только внутри Telegram, вне Telegram ничего не ломает -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>
@@ -41,41 +40,100 @@
   .rise { animation: rise .7s cubic-bezier(.2, .7, .2, 1) both; }
   @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
   @media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
+  /* Полноэкранный просмотр портфолио (Lightbox) */
+  #lb { visibility: hidden; opacity: 0; transition: opacity .25s ease, visibility 0s linear .25s; }
+  #lb.open { visibility: visible; opacity: 1; transition-delay: 0s; }
 </style>
 </head>
 
 <body class="bg-milk text-[#2a2024] antialiased">
 
-  <main class="mx-auto max-w-md pb-[calc(32px+env(safe-area-inset-bottom))]">
+  <!-- Экран-заглушка (если открыли без ?config= и без ?key=beauty2026) -->
+  <div id="lock-view" class="mx-auto hidden min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
+    <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
+      <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Умная визитка мастера</span>
+      <h1 class="display mt-4 text-[28px] leading-tight">Сервис персональной онлайн-записи</h1>
+      <p class="mt-3 text-[15px] leading-relaxed text-neutral-500">Клиенты записываются в 2 клика без звонков и переписок, а готовые заявки мгновенно приходят вам в Telegram.</p>
+      <a id="bot-access-btn" href="https://t.me/" target="_blank" rel="noopener"
+         class="mt-6 block w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Получить свою визитку</a>
+      <p class="mt-4 text-xs text-neutral-400">Для входа в панель настройки используйте персональную ссылку мастера с ключом доступа.</p>
+    </div>
+  </div>
+
+  <!-- Основная витрина мастера -->
+  <main id="app-view" class="mx-auto max-w-md pb-[calc(36px+env(safe-area-inset-bottom))]">
 
     <!-- Шапка мастера -->
     <header>
-      <!-- Фото задаётся в панели мастера (ссылка на фото) -->
-      <img id="master-photo" class="h-[52dvh] max-h-[440px] min-h-[300px] w-full rounded-b-[36px] bg-ios object-cover" alt="Анна, мастер маникюра"
-           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 120'%3E%3Crect width='96' height='120' fill='rgb(236,222,218)'/%3E%3Ccircle cx='48' cy='46' r='17' fill='rgb(206,182,180)'/%3E%3Cpath d='M14 120c0-26 15-42 34-42s34 16 34 42z' fill='rgb(206,182,180)'/%3E%3C/svg%3E">
+      <div class="relative">
+        <img id="master-photo" class="h-[48dvh] max-h-[420px] min-h-[290px] w-full rounded-b-[36px] bg-ios object-cover shadow-sm" alt="Анна, мастер маникюра"
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 120'%3E%3Crect width='96' height='120' fill='rgb(236,222,218)'/%3E%3Ccircle cx='48' cy='46' r='17' fill='rgb(206,182,180)'/%3E%3Cpath d='M14 120c0-26 15-42 34-42s34 16 34 42z' fill='rgb(206,182,180)'/%3E%3C/svg%3E">
+      </div>
       <div class="rise px-6 pt-6 text-center">
         <h1 id="master-name" class="display text-[32px] leading-tight">Анна | Маникюр</h1>
         <p id="master-desc" class="mt-2 text-[16px] text-neutral-500">Аккуратно, стерильно, без спешки</p>
-        <p class="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm text-neutral-600">
+        <p class="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm text-neutral-600 shadow-sm ring-1 ring-ios/60">
           <span class="h-2 w-2 rounded-full bg-green-500"></span>Есть свободные окна на этой неделе
         </p>
       </div>
     </header>
 
-    <!-- Работы мастера -->
+    <!-- Портфолио работ мастера -->
     <section id="gallery" class="rise mt-8 hidden" style="animation-delay:.1s" aria-labelledby="gallery-title">
-      <h2 id="gallery-title" class="display px-6 pb-3 text-[22px]">Работы</h2>
-      <div id="gallery-list" class="no-scrollbar flex snap-x gap-3 overflow-x-auto px-6"></div>
+      <div class="flex items-baseline justify-between px-6 pb-3">
+        <h2 id="gallery-title" class="display text-[22px]">Портфолио</h2>
+        <span id="gallery-count" class="text-xs font-medium text-neutral-400">Нажмите на фото для увеличения</span>
+      </div>
+      <div id="gallery-list" class="no-scrollbar flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-6 pb-2"></div>
     </section>
 
     <!-- Услуги -->
-    <section class="rise mt-8 px-4" style="animation-delay:.18s" aria-labelledby="services-title">
-      <h2 id="services-title" class="display px-2 pb-3 text-[22px]">Услуги</h2>
-      <div id="services" class="divide-y divide-ios rounded-3xl bg-white px-5"></div>
+    <section class="rise mt-7 px-4" style="animation-delay:.18s" aria-labelledby="services-title">
+      <h2 id="services-title" class="display px-2 pb-3 text-[22px]">Услуги и запись</h2>
+      <div id="services" class="divide-y divide-ios rounded-3xl bg-white px-5 shadow-sm ring-1 ring-ios/50"></div>
     </section>
+
+    <!-- Адрес и как добраться -->
+    <section id="address-sec" class="rise mt-6 hidden px-4" style="animation-delay:.24s" aria-labelledby="address-title">
+      <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ios/50">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 id="address-title" class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Адрес приёма</h2>
+            <p id="master-address" class="mt-1 text-[16px] font-medium text-[#2a2024]"></p>
+            <p id="master-route-hint" class="mt-1 text-sm text-neutral-500"></p>
+          </div>
+          <a id="map-link" href="#" target="_blank" rel="noopener"
+             class="shrink-0 rounded-2xl bg-ios px-3.5 py-2.5 text-xs font-semibold text-tg active:opacity-75">
+            На карте ↗
+          </a>
+        </div>
+      </div>
+    </section>
+
     <button id="open-settings" type="button"
-            class="mx-auto mt-10 block px-4 py-3 text-sm text-neutral-400 active:text-neutral-600">⚙️ Настроить профиль (для мастера)</button>
+            class="mx-auto mt-10 hidden rounded-full bg-white px-5 py-2.5 text-sm font-medium text-tg shadow-sm ring-1 ring-ios active:opacity-75">
+      ⚙️ Настроить профиль (режим мастера)
+    </button>
   </main>
+
+  <!-- Полноэкранный просмотр фото работ (Lightbox) -->
+  <div id="lb" class="fixed inset-0 z-[70] flex flex-col bg-black/95 select-none" aria-hidden="true" role="dialog" aria-label="Просмотр фото">
+    <div class="flex items-center justify-between px-5 pt-[calc(14px+env(safe-area-inset-top))] pb-3 text-white">
+      <span id="lb-counter" class="text-sm font-medium tracking-wide text-white/80">1 / 1</span>
+      <button id="lb-close" type="button" aria-label="Закрыть фото"
+              class="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white active:bg-white/25">
+        <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg>
+      </button>
+    </div>
+    <div id="lb-track" class="no-scrollbar flex flex-1 snap-x snap-mandatory items-center overflow-x-auto"></div>
+    <div class="px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3 text-center">
+      <button id="lb-book" type="button"
+              class="mx-auto w-full max-w-xs rounded-2xl bg-tg py-3.5 text-sm font-semibold text-white shadow-lg active:opacity-85">
+        Записаться к мастеру
+      </button>
+    </div>
+  </div>
 
   <!-- Окно записи -->
   <div id="modal" class="modal fixed inset-0 z-50" aria-hidden="true">
@@ -107,27 +165,30 @@
 
         <h3 class="mt-6 text-sm font-medium text-neutral-500">Время</h3>
         <div id="slots" class="mt-2 grid grid-cols-4 gap-2"></div>
-        <p id="slot-err" class="mt-1.5 hidden text-sm text-red-500">Выберите время</p>
+        <p id="slot-err" class="mt-1.5 hidden text-sm text-red-500">Выберите свободное время</p>
 
         <label class="mt-6 block">
           <span class="text-sm font-medium text-neutral-500">Ваше имя</span>
           <input id="name" type="text" autocomplete="name" placeholder="Например, Мария"
                  class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
-        <p id="name-err" class="mt-1.5 hidden text-sm text-red-500">Введите имя</p>
+        <p id="name-err" class="mt-1.5 hidden text-sm text-red-500">Введите ваше имя (минимум 2 буквы)</p>
 
         <label class="mt-4 block">
           <span class="text-sm font-medium text-neutral-500">Номер телефона</span>
           <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 (999) 123-45-67"
                  class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
-        <p id="phone-err" class="mt-1.5 hidden text-sm text-red-500">Введите номер полностью</p>
+        <p id="phone-err" class="mt-1.5 hidden text-sm text-red-500">Введите номер телефона полностью</p>
 
         <div class="mt-6 flex items-start gap-3">
-          <input id="consent" type="checkbox" class="mt-0.5 h-6 w-6 shrink-0 accent-tg">
-          <label for="consent" class="text-sm leading-snug text-neutral-600">Нажимая кнопку, я даю согласие на обработку персональных данных и принимаю условия <button id="open-policy" type="button" class="font-medium text-tg underline underline-offset-2">Политики конфиденциальности</button></label>
+          <input id="consent" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 rounded accent-tg">
+          <label for="consent" class="text-xs leading-snug text-neutral-600">
+            Нажимая кнопку, я даю согласие на обработку персональных данных и принимаю условия
+            <button id="open-policy" type="button" class="font-medium text-tg underline underline-offset-2">Политики конфиденциальности</button>
+          </label>
         </div>
-        <p id="consent-err" class="mt-1.5 hidden text-sm text-red-500">Отметьте согласие, чтобы продолжить</p>
+        <p id="consent-err" class="mt-1.5 hidden text-sm text-red-500">Отметьте согласие на обработку данных</p>
 
         <button id="confirm" type="button" disabled
                 class="mt-4 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50">
@@ -138,27 +199,33 @@
 
       <!-- Успех -->
       <div id="done-view" class="hidden overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-8 text-center">
-        <svg class="mx-auto" width="88" height="88" viewBox="0 0 56 56" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg class="mx-auto" width="80" height="80" viewBox="0 0 56 56" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle class="check-circle" cx="28" cy="28" r="26" stroke="#34c759" stroke-width="3"/>
           <path class="check-mark" d="M17 29l8 8 14-16" stroke="#34c759" stroke-width="3.5"/>
         </svg>
-        <h2 class="mt-5 text-2xl font-semibold">Вы записаны!</h2>
-        <p id="done-text" class="mt-2 text-[17px] text-neutral-600"></p>
+        <h2 class="mt-4 text-2xl font-semibold">Вы записаны!</h2>
+        <p id="done-text" class="mt-1.5 text-[16px] text-neutral-600"></p>
 
-        <dl class="mt-6 space-y-3 rounded-2xl bg-ios p-4 text-left text-[15px]">
+        <dl class="mt-5 space-y-2.5 rounded-2xl bg-ios p-4 text-left text-[15px]">
           <div class="flex justify-between gap-4"><dt class="text-neutral-500">Услуга</dt><dd id="sum-service" class="text-right font-medium"></dd></div>
           <div class="flex justify-between gap-4"><dt class="text-neutral-500">Дата</dt><dd id="sum-date" class="text-right font-medium"></dd></div>
           <div class="flex justify-between gap-4"><dt class="text-neutral-500">Время</dt><dd id="sum-time" class="text-right font-medium"></dd></div>
           <div class="flex justify-between gap-4"><dt class="text-neutral-500">Стоимость</dt><dd id="sum-price" class="text-right font-medium"></dd></div>
+          <div id="sum-addr-row" class="hidden justify-between gap-4 border-t border-neutral-200/60 pt-2"><dt class="text-neutral-500">Адрес</dt><dd id="sum-addr" class="text-right font-medium"></dd></div>
         </dl>
 
+        <button id="cal-btn" type="button"
+                class="mt-4 w-full rounded-2xl bg-ios py-3.5 text-sm font-semibold text-tg active:opacity-75">
+          📅 Добавить напоминание в календарь
+        </button>
+
         <button id="done-btn" type="button"
-                class="mt-6 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Готово</button>
+                class="mt-2.5 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Готово</button>
       </div>
     </section>
   </div>
 
-<!-- Политика конфиденциальности -->
+  <!-- Политика конфиденциальности (152-ФЗ) -->
   <div id="policy" class="modal fixed inset-0 z-[60]" aria-hidden="true">
     <div class="backdrop absolute inset-0 bg-black/40" data-close-policy></div>
     <section id="policy-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="policy-title"
@@ -167,35 +234,33 @@
         <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
         <h2 id="policy-title" class="text-xl font-semibold">Политика конфиденциальности</h2>
       </div>
-      <div class="space-y-3 overflow-y-auto px-5 pb-4 pt-3 text-[15px] leading-relaxed text-neutral-700">
-        <p><b>1. Общие положения.</b> Настоящая Политика описывает, как обрабатываются персональные данные, которые вы вводите в форме онлайн-записи, в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
-        <p><b>2. Роль сайта и оператор данных.</b> Этот сайт является исключительно техническим интерфейсом для передачи заявки на запись. Оператором персональных данных выступает конкретный мастер, к которому осуществляется запись: именно он определяет цели и способы обработки данных и отвечает за них. Владелец сайта не является оператором этих данных, не создаёт базу клиентов и не хранит введённые данные на сайте.</p>
-        <p><b>3. Какие данные обрабатываются.</b> Имя, номер телефона, а также выбранные услуга, дата и время записи.</p>
-        <p><b>4. Цели обработки.</b> Оформление и подтверждение записи, связь с вами по вопросам записи (звонок или сообщение).</p>
-        <p><b>5. Передача данных.</b> Заявка передаётся мастеру в мессенджер Telegram. Данные не передаются другим третьим лицам, кроме случаев, предусмотренных законом.</p>
-        <p><b>6. Срок хранения.</b> Мастер хранит данные только то время, которое нужно для оказания услуги и связи с вами, после чего удаляет их.</p>
-        <p><b>7. Ваши права.</b> Вы вправе отозвать согласие, потребовать уточнения или удаления своих данных, обратившись напрямую к мастеру любым удобным способом, например через Telegram или по телефону, по которому он связывается с вами.</p>
-        <p><b>8. Согласие.</b> Отметив галочку и нажав «Подтвердить запись», вы даёте согласие на обработку указанных данных на условиях настоящей Политики. Согласие действует до его отзыва.</p>
+      <div class="space-y-3 overflow-y-auto px-5 pb-4 pt-3 text-[14px] leading-relaxed text-neutral-700">
+        <p><b>1. Общие положения.</b> Настоящая Политика определяет порядок обработки персональных данных пользователей в соответствии с ФЗ от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
+        <p><b>2. Роль сайта и Оператор данных.</b> Данная веб-страница является исключительно техническим интерфейсом (информационным посредником согласно ст. 1253.1 ГК РФ) для формирования и отправки заявки. <b>Оператором персональных данных</b> выступает непосредственно частный мастер (исполнитель услуг), указанный в шапке профиля. Владелец программного шаблона не собирает, не хранит и не обрабатывает базы данных клиентов на своих серверах.</p>
+        <p><b>3. Состав данных.</b> Имя клиента, контактный номер телефона, выбранная услуга, дата и время визита.</p>
+        <p><b>4. Цель обработки.</b> Оперативная связь мастера с клиентом для подтверждения бронирования, напоминания о визите и оказания выбранной услуги.</p>
+        <p><b>5. Передача и хранение.</b> Заявка передается напрямую мастеру через защищенный протокол мессенджера Telegram без сохранения на промежуточных серверах сайта.</p>
+        <p><b>6. Права субъекта ПДн.</b> Вы вправе в любой момент отозвать согласие или потребовать удаления своих данных, направив сообщение непосредственно мастеру по его контактным данным.</p>
       </div>
       <div class="px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-2">
         <button id="policy-close" type="button" data-close-policy
-                class="w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Закрыть</button>
+                class="w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Понятно</button>
       </div>
     </section>
   </div>
 
-<!-- Панель мастера -->
+  <!-- Панель мастера (доступна только по секретному ключу ?key=beauty2026) -->
   <div id="panel" class="modal fixed inset-0 z-50" aria-hidden="true">
     <div class="backdrop absolute inset-0 bg-black/40" data-close></div>
     <section id="panel-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="panel-title"
              class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-white outline-none">
-      <div class="overflow-y-auto px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
+      <div class="overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3">
         <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
 
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 id="panel-title" class="text-xl font-semibold">Панель мастера</h2>
-            <p class="mt-0.5 text-sm text-neutral-500">Настройки хранятся в этом браузере</p>
+            <h2 id="panel-title" class="text-xl font-semibold">Конструктор визитки</h2>
+            <p class="mt-0.5 text-sm text-neutral-500">Заполните профиль и скопируйте ссылку для клиентов</p>
           </div>
           <button type="button" data-close aria-label="Закрыть"
                   class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-neutral-500 active:opacity-70">
@@ -205,74 +270,104 @@
 
         <label class="mt-5 block">
           <span class="text-sm font-medium text-neutral-500">Имя и специализация</span>
-          <input id="p-name" type="text" maxlength="60" placeholder="Анна | Маникюр"
-                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+          <input id="p-name" type="text" maxlength="60" placeholder="Анна | Маникюр и педикюр"
+                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
+
         <label class="mt-4 block">
-          <span class="text-sm font-medium text-neutral-500">Описание или статус</span>
-          <input id="p-desc" type="text" maxlength="120" placeholder="Аккуратно, стерильно, без спешки"
-                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+          <span class="text-sm font-medium text-neutral-500">Короткое описание / УТП</span>
+          <input id="p-desc" type="text" maxlength="120" placeholder="Стерильно, носка 4 недели без отслоек"
+                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
+
         <label class="mt-4 block">
-          <span class="text-sm font-medium text-neutral-500">Ссылка на фото (необязательно)</span>
+          <span class="text-sm font-medium text-neutral-500">Главное фото профиля (URL-ссылка)</span>
           <input id="p-photo" type="url" inputmode="url" placeholder="https://..."
-                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 rounded-2xl bg-ios/60 p-3.5">
+          <label class="block">
+            <span class="text-sm font-medium text-neutral-600">Адрес студии / кабинета (необязательно)</span>
+            <input id="p-addr" type="text" maxlength="100" placeholder="Например: ул. Ленина, 15, студия 302"
+                   class="mt-1.5 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-neutral-500">Как найти (ориентир / домофон / этаж)</span>
+            <input id="p-hint" type="text" maxlength="120" placeholder="Вход со двора, 3 этаж, код 15К"
+                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+          </label>
+        </div>
+
         <label class="mt-4 block">
           <span class="text-sm font-medium text-neutral-500">Telegram Chat ID мастера</span>
           <input id="p-chat" type="text" inputmode="numeric" placeholder="Например, 123456789"
-                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
-          <span class="mt-1.5 block text-xs text-neutral-500">Свой ID покажет бот @userinfobot. Перед этим нужно нажать Start у бота этой страницы.</span>
+                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+          <span class="mt-1 block text-xs text-neutral-500">Узнать свой цифровой ID можно в @userinfobot. Не забудьте нажать /start в боте уведомлений.</span>
         </label>
 
         <label class="mt-4 block">
-          <span class="text-sm font-medium text-neutral-500">Фото работ (до 8 ссылок, каждая с новой строки)</span>
-          <textarea id="p-gallery" rows="3" placeholder="https://..."
-                    class="mt-2 w-full resize-none rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40"></textarea>
+          <span class="text-sm font-medium text-neutral-500">Портфолио работ (до 10 ссылок на фото, с новой строки)</span>
+          <textarea id="p-gallery" rows="3" placeholder="https://...jpg"
+                    class="mt-1.5 w-full resize-none rounded-xl bg-ios px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40"></textarea>
         </label>
 
-        <h3 class="mt-6 text-sm font-medium text-neutral-500">Услуги</h3>
+        <h3 class="mt-6 text-sm font-medium text-neutral-500">Прайс-лист и услуги</h3>
         <div id="svc-list" class="mt-2 space-y-2"></div>
         <button id="svc-add" type="button"
-                class="mt-2 w-full rounded-xl bg-tg/10 py-3 text-[15px] font-semibold text-tg active:bg-tg/20">Добавить услугу</button>
+                class="mt-2 w-full rounded-xl bg-tg/10 py-3 text-[15px] font-semibold text-tg active:bg-tg/20">+ Добавить услугу</button>
 
         <label class="mt-6 block">
-          <span class="text-sm font-medium text-neutral-500">Время для записи (через запятую)</span>
+          <span class="text-sm font-medium text-neutral-500">Свободные слоты времени (через запятую)</span>
           <input id="p-slots" type="text" placeholder="10:00, 12:30, 15:00, 18:00"
-                 class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
+
+        <!-- Юридическая оферта для мастера -->
+        <div class="mt-5 flex items-start gap-2.5 rounded-xl bg-ios/70 p-3">
+          <input id="p-legal" type="checkbox" checked class="mt-0.5 h-5 w-5 shrink-0 accent-tg">
+          <label for="p-legal" class="text-xs leading-snug text-neutral-600">
+            Я подтверждаю, что обладаю правами на размещаемые фотографии работ, самостоятельно выступаю оператором ПДн своих клиентов (152-ФЗ) и освобождаю разработчика шаблона от претензий третьих лиц.
+          </label>
+        </div>
 
         <p id="panel-err" class="mt-3 hidden text-sm text-red-500" role="alert"></p>
         <button id="p-save" type="button"
-                class="mt-5 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Сохранить настройки</button>
+                class="mt-4 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white active:opacity-80">Сгенерировать витрину</button>
 
         <div id="link-block" class="mt-6 hidden rounded-2xl bg-ios p-4">
-          <h3 class="text-sm font-medium">Персональная ссылка для клиентов</h3>
+          <h3 class="text-sm font-semibold text-tg">Готовая ссылка для ваших клиентов:</h3>
           <textarea id="p-link" readonly rows="4"
                     class="mt-2 w-full resize-none break-all rounded-xl bg-white p-3 text-xs text-neutral-600 outline-none"></textarea>
           <button id="p-copy" type="button"
-                  class="mt-2 w-full rounded-xl bg-white py-3 text-[15px] font-semibold text-tg active:opacity-70">📋 Скопировать ссылку для клиентов</button>
-          <p class="mt-2 text-xs text-neutral-500">Клиенты увидят страницу без панели настроек. Чтобы изменить данные, откройте адрес без «?config=».</p>
+                  class="mt-2 w-full rounded-xl bg-tg py-3 text-[15px] font-semibold text-white active:opacity-80">📋 Скопировать клиентскую ссылку</button>
+          <p class="mt-2 text-xs text-neutral-500">Разместите эту ссылку в шапке Instagram, VK, Telegram или отправляйте клиентам в личные сообщения.</p>
         </div>
       </div>
     </section>
   </div>
 
 <script>
-  // ---------- Данные ----------
+  // ---------- Константы и Защита ----------
+  const ADMIN_KEY = 'beauty2026'; // Секретный ключ для настройки: ?key=beauty2026
+  const BOT_TOKEN = '8812903931:AAGEJ1tiwzvdXI-1kmnmOJn2D2bOd6fX4U0';
+  const CHAT_ID = 1777553103;
+
+  const DEFAULT_GALLERY = [
+    'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1610992015732-2449b76344bc?auto=format&fit=crop&w=800&q=80'
+  ];
+
   const SERVICES = [
     { id: 1, name: 'Комбинированный маникюр', price: 1500, dur: '1,5 ч' },
-    { id: 2, name: 'Маникюр с гель-лаком',    price: 2200, dur: '2 ч'   },
-    { id: 3, name: 'Наращивание ногтей',      price: 3500, dur: '3 ч'   }
+    { id: 2, name: 'Маникюр + выравнивание + гель-лак', price: 2200, dur: '2 ч' },
+    { id: 3, name: 'Наращивание / Архитектура ногтей', price: 3500, dur: '2,5 ч' },
+    { id: 4, name: 'SMART-педикюр (полный)', price: 2800, dur: '1,5 ч' }
   ];
   let SLOTS = ['10:00', '12:30', '15:00', '18:00'];
 
-  // ---------- Telegram ----------
-  // Внимание: всё, что лежит в этом файле, видно любому, кто откроет страницу.
-  const BOT_TOKEN = '8812903931:AAGEJ1tiwzvdXI-1kmnmOJn2D2bOd6fX4U0';
-  const CHAT_ID = 1777553103; // Chat ID по умолчанию, пока мастер не задал свой
-
-  // Ближайшие 14 дней
   const DAYS = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i); return d;
   });
@@ -280,10 +375,11 @@
   // ---------- Помощники ----------
   const $ = (s) => document.querySelector(s);
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-  const fmtPrice = (n) => n.toLocaleString('ru-RU') + '\u00a0₽';
+  const fmtPrice = (n) => Number(n).toLocaleString('ru-RU') + '\u00a0₽';
   const fmtWeekday = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' });
   const fmtMonth = new Intl.DateTimeFormat('ru-RU', { month: 'long' });
   const fmtFull = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const modal = $('#modal'), sheet = $('#sheet');
   const formView = $('#form-view'), doneView = $('#done-view');
@@ -299,7 +395,14 @@
     if (u && u.first_name) nameEl.value = u.first_name;
   }
 
-  // Доступность: воскресенье выходной, прошедшее время и «занятые» слоты недоступны
+  function updateBodyScroll() {
+    const anyOpen = ['modal', 'policy', 'panel', 'lb'].some((id) => {
+      const el = document.getElementById(id);
+      return el && el.classList.contains('open');
+    });
+    document.body.style.overflow = anyOpen ? 'hidden' : '';
+  }
+
   function slotFree(date, i) {
     if (date.getDay() === 0) return false;
     const [h, m] = SLOTS[i].split(':').map(Number);
@@ -309,18 +412,25 @@
   }
   const dayFree = (date) => SLOTS.some((_, i) => slotFree(date, i));
 
-  // ---------- Настройки мастера ----------
-  const STORE_KEY = 'masterConfig:v1';
+  // ---------- Маршрутизация и Конфигурация ----------
+  const STORE_KEY = 'masterConfig:v2';
   const DEFAULTS = {
-    name: 'Анна | Маникюр', desc: 'Аккуратно, стерильно, без спешки', photo: '', chatId: String(CHAT_ID),
+    name: 'Анна | Маникюр',
+    desc: 'Аккуратно, стерильно, без спешки',
+    photo: '',
+    addr: 'ул. Малая Бронная, 12, студия 204',
+    hint: 'Вход со двора, 2 этаж, домофон 204',
+    chatId: String(CHAT_ID),
     services: SERVICES.map((s) => ({ name: s.name, price: s.price, dur: s.dur })),
-    slots: SLOTS.slice(), gallery: []
+    slots: SLOTS.slice(),
+    gallery: DEFAULT_GALLERY.slice()
   };
-  const DEFAULT_AVATAR = $('#master-photo').src;
-  const clientMode = new URLSearchParams(location.search).has('config');
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  // Время: "10:00, 12:30" -> ['10:00', '12:30'] или null, если есть ошибка
+  const DEFAULT_AVATAR = $('#master-photo').src;
+  const urlParams = new URLSearchParams(location.search);
+  const clientMode = urlParams.has('config');
+  const adminMode = urlParams.get('key') === ADMIN_KEY;
+
   function parseSlots(text) {
     const out = [];
     for (const raw of String(text).split(/[,;\s]+/)) {
@@ -330,26 +440,35 @@
       const t = m[1].padStart(2, '0') + ':' + m[2];
       if (!out.includes(t)) out.push(t);
     }
-    return out.length && out.length <= 12 ? out.sort() : null;
+    return out.length && out.length <= 16 ? out.sort() : null;
   }
 
-  // Приводит настройки к безопасному виду: данные из ссылки нельзя считать надёжными
   function clean(r) {
     try {
       const str = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
-      const c = { name: str(r.name, 60), desc: str(r.desc, 120), photo: str(r.photo, 500), chatId: str(r.chatId, 20), services: [], slots: parseSlots(r.slots.join(',')),
-        gallery: (Array.isArray(r.gallery) ? r.gallery : []).map((u) => str(u, 500)).filter((u) => /^https?:\/\//i.test(u)).slice(0, 8) };
+      const c = {
+        name: str(r.name, 60),
+        desc: str(r.desc, 120),
+        photo: str(r.photo, 500),
+        addr: str(r.addr, 100),
+        hint: str(r.hint, 120),
+        chatId: str(r.chatId, 20),
+        services: [],
+        slots: parseSlots(Array.isArray(r.slots) ? r.slots.join(',') : r.slots),
+        gallery: (Array.isArray(r.gallery) ? r.gallery : []).map((u) => str(u, 500)).filter((u) => /^https?:\/\//i.test(u)).slice(0, 10)
+      };
       if (!c.name || !/^-?\d{5,18}$/.test(c.chatId)) return null;
       if (!/^https?:\/\//i.test(c.photo)) c.photo = '';
-      for (const s of r.services.slice(0, 20)) {
+      for (const s of (r.services || []).slice(0, 25)) {
         const price = Math.round(Number(s.price));
-        if (str(s.name, 60) && price >= 0 && price <= 10000000) c.services.push({ name: str(s.name, 60), price: price, dur: str(s.dur, 20) });
+        if (str(s.name, 60) && price >= 0 && price <= 10000000) {
+          c.services.push({ name: str(s.name, 60), price: price, dur: str(s.dur, 20) });
+        }
       }
       return c.services.length && c.slots ? c : null;
     } catch (e) { return null; }
   }
 
-  // Кодирование настроек в ссылку (base64 без символов + / =)
   const toB64 = (obj) => {
     let b = '';
     new TextEncoder().encode(JSON.stringify(obj)).forEach((x) => { b += String.fromCharCode(x); });
@@ -361,52 +480,131 @@
     return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0))));
   };
   const linkFor = (c) => location.href.split('#')[0].split('?')[0] + '?config=' +
-    toB64({ n: c.name, d: c.desc, p: c.photo, c: c.chatId, s: c.services.map((s) => [s.name, s.price, s.dur]), t: c.slots, g: c.gallery });
+    toB64({ n: c.name, d: c.desc, p: c.photo, a: c.addr, h: c.hint, c: c.chatId, s: c.services.map((s) => [s.name, s.price, s.dur]), t: c.slots, g: c.gallery });
 
   function loadConfig() {
     try {
       if (clientMode) {
-        const o = fromB64(new URLSearchParams(location.search).get('config'));
-        return clean({ name: o.n, desc: o.d, photo: o.p, chatId: o.c, slots: o.t, gallery: o.g, services: o.s.map((x) => ({ name: x[0], price: x[1], dur: x[2] })) });
+        const o = fromB64(urlParams.get('config'));
+        return clean({
+          name: o.n, desc: o.d, photo: o.p, addr: o.a || '', hint: o.h || '',
+          chatId: o.c, slots: o.t, gallery: o.g,
+          services: (o.s || []).map((x) => ({ name: x[0], price: x[1], dur: x[2] }))
+        });
       }
       return clean(JSON.parse(localStorage.getItem(STORE_KEY))) || DEFAULTS;
     } catch (e) { return clientMode ? null : DEFAULTS; }
   }
 
-  // Подставляет настройки на страницу
   let config = loadConfig() || DEFAULTS;
+
+  // ---------- Портфолио и Лайтбокс ----------
+  const lb = $('#lb'), lbTrack = $('#lb-track'), lbCounter = $('#lb-counter');
+
+  function openLightbox(index) {
+    if (!config.gallery || !config.gallery.length) return;
+    lbTrack.innerHTML = config.gallery.map((u, idx) => `
+      <div class="flex h-full w-full shrink-0 snap-center items-center justify-center px-4">
+        <img src="${esc(u)}" alt="Работа мастера ${idx + 1}" class="max-h-[75dvh] max-w-full rounded-2xl object-contain shadow-2xl">
+      </div>
+    `).join('');
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden', 'false');
+    updateBodyScroll();
+    lbCounter.textContent = (index + 1) + ' / ' + config.gallery.length;
+    requestAnimationFrame(() => {
+      lbTrack.scrollLeft = index * lbTrack.clientWidth;
+    });
+  }
+
+  function closeLightbox() {
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden', 'true');
+    updateBodyScroll();
+  }
+
+  lbTrack.addEventListener('scroll', () => {
+    const total = config.gallery.length;
+    if (!total) return;
+    const idx = Math.min(total - 1, Math.max(0, Math.round(lbTrack.scrollLeft / lbTrack.clientWidth)));
+    lbCounter.textContent = (idx + 1) + ' / ' + total;
+  }, { passive: true });
+
+  $('#lb-close').addEventListener('click', closeLightbox);
+  lb.addEventListener('click', (e) => { if (e.target === lbTrack || e.target.classList.contains('snap-center')) closeLightbox(); });
+  $('#lb-book').addEventListener('click', () => {
+    closeLightbox();
+    if (config.services.length) openModal(config.services[0], $('#lb-book'));
+  });
+
+  // ---------- Отрисовка страницы ----------
   function applyConfig(c) {
     config = c;
     SLOTS = c.slots;
-    document.title = c.name + ': онлайн-запись';
+    document.title = c.name + ' — онлайн-запись';
     $('#master-name').textContent = c.name;
     $('#master-desc').textContent = c.desc;
+
     const img = $('#master-photo');
     img.alt = c.name;
     img.onerror = () => { img.onerror = null; img.src = DEFAULT_AVATAR; };
     img.src = c.photo || DEFAULT_AVATAR;
+
+    // Услуги
     $('#services').innerHTML = c.services.map((s, i) => `
     <article class="flex items-center justify-between gap-4 py-4">
       <div class="min-w-0">
         <h3 class="text-[17px] font-semibold leading-snug">${esc(s.name)}</h3>
-        ${s.dur ? `<p class="mt-0.5 text-sm text-neutral-500">${esc(s.dur)}</p>` : ''}
+        ${s.dur ? `<p class="mt-0.5 text-sm text-neutral-500">⏱ ${esc(s.dur)}</p>` : ''}
       </div>
       <div class="flex shrink-0 flex-col items-end gap-2">
         <p class="whitespace-nowrap text-[17px] font-semibold">${fmtPrice(s.price)}</p>
         <button type="button" data-service="${i}"
-                class="rounded-full bg-tg px-4 py-2 text-sm font-semibold text-white active:opacity-80">Записаться</button>
+                class="rounded-full bg-tg px-4 py-2 text-sm font-semibold text-white shadow-sm active:opacity-80">Записаться</button>
       </div>
     </article>`).join('');
-    $('#gallery').classList.toggle('hidden', !c.gallery.length);
-    $('#gallery-list').innerHTML = c.gallery.map((u) => `<img src="${esc(u)}" alt="Работа мастера" loading="lazy" onerror="this.remove()" class="h-48 w-36 shrink-0 snap-start rounded-2xl bg-ios object-cover">`).join('');
+
+    // Портфолио
+    const hasGal = Array.isArray(c.gallery) && c.gallery.length > 0;
+    $('#gallery').classList.toggle('hidden', !hasGal);
+    if (hasGal) {
+      $('#gallery-list').innerHTML = c.gallery.map((u, idx) => `
+        <button type="button" data-photo="${idx}" class="group relative h-52 w-40 shrink-0 snap-start overflow-hidden rounded-2xl bg-ios shadow-sm focus:outline-none">
+          <img src="${esc(u)}" alt="Работа мастера ${idx + 1}" loading="lazy" onerror="this.closest('button').remove()"
+               class="h-full w-full object-cover transition-transform duration-300 group-active:scale-95">
+          <span class="absolute bottom-2 right-2 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+            ${idx + 1}/${c.gallery.length}
+          </span>
+        </button>
+      `).join('');
+    }
+
+    // Адрес
+    const hasAddr = Boolean(c.addr && c.addr.trim());
+    $('#address-sec').classList.toggle('hidden', !hasAddr);
+    if (hasAddr) {
+      $('#master-address').textContent = c.addr;
+      $('#master-route-hint').textContent = c.hint || '';
+      $('#master-route-hint').classList.toggle('hidden', !c.hint);
+      $('#map-link').href = 'https://yandex.ru/maps/?text=' + encodeURIComponent(c.addr);
+    }
   }
 
-  if (clientMode && !loadConfig()) {
-    // Ссылка повреждена: записаться нельзя
-    $('#services').innerHTML = '<p class="rounded-2xl bg-white p-4 text-center text-neutral-500">Ссылка повреждена. Попросите мастера прислать её ещё раз.</p>';
+  // Логика доступа: Клиент (?config=), Мастер (?key=beauty2026) или Заглушка
+  if (!clientMode && !adminMode) {
+    $('#app-view').classList.add('hidden');
+    $('#lock-view').classList.remove('hidden');
+    $('#lock-view').classList.add('flex');
+  } else if (clientMode && !loadConfig()) {
+    $('#services').innerHTML = '<p class="rounded-2xl bg-white p-4 text-center text-neutral-500">Ссылка повреждена. Попросите мастера прислать актуальную ссылку.</p>';
   } else {
     applyConfig(config);
   }
+
+  $('#gallery-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-photo]');
+    if (btn) openLightbox(+btn.dataset.photo);
+  });
 
   $('#services').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-service]');
@@ -416,13 +614,13 @@
   // ---------- Панель мастера ----------
   const panel = $('#panel'), panelSheet = $('#panel-sheet'), svcList = $('#svc-list'), panelErr = $('#panel-err');
   const settingsBtn = $('#open-settings');
-  const INP = 'min-w-0 rounded-xl bg-white px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40';
+  const INP = 'min-w-0 rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40';
   let draft = [];
 
   const setSheet = (m, on) => {
     m.classList.toggle('open', on);
     m.setAttribute('aria-hidden', String(!on));
-    document.body.style.overflow = on ? 'hidden' : '';
+    updateBodyScroll();
   };
 
   function renderRows() {
@@ -431,9 +629,9 @@
         <input data-k="name" value="${esc(s.name)}" maxlength="60" placeholder="Название услуги" class="${INP} w-full">
         <div class="mt-2 flex gap-2">
           <input data-k="price" value="${esc(s.price)}" inputmode="numeric" placeholder="Цена, ₽" class="${INP} flex-1">
-          <input data-k="dur" value="${esc(s.dur)}" maxlength="20" placeholder="Длительность" class="${INP} flex-1">
+          <input data-k="dur" value="${esc(s.dur)}" maxlength="20" placeholder="Длит. (2 ч)" class="${INP} flex-1">
           <button type="button" data-del="${i}" aria-label="Удалить услугу"
-                  class="shrink-0 rounded-xl bg-white px-4 text-red-500 active:opacity-70">✕</button>
+                  class="shrink-0 rounded-xl bg-white px-3.5 text-red-500 active:opacity-70">✕</button>
         </div>
       </div>`).join('');
   }
@@ -452,6 +650,8 @@
     $('#p-name').value = c.name;
     $('#p-desc').value = c.desc;
     $('#p-photo').value = c.photo;
+    $('#p-addr').value = c.addr || '';
+    $('#p-hint').value = c.hint || '';
     $('#p-chat').value = c.chatId;
     $('#p-slots').value = c.slots.join(', ');
     $('#p-gallery').value = c.gallery.join('\n');
@@ -466,25 +666,19 @@
     $('#link-block').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
-  function hasSaved() {
-    try { return !!localStorage.getItem(STORE_KEY); } catch (e) { return false; }
-  }
-
   function openPanel() {
     fillPanel(config);
     panelErr.classList.add('hidden');
-    showLink(hasSaved() ? config : null);
+    showLink(config);
     setSheet(panel, true);
     panelSheet.focus({ preventScroll: true });
   }
   function closePanel() { setSheet(panel, false); settingsBtn.focus({ preventScroll: true }); }
 
-  if (clientMode) {
-    settingsBtn.remove(); // клиенту панель настроек не показываем
-  } else {
+  if (adminMode) {
+    settingsBtn.classList.remove('hidden');
     settingsBtn.addEventListener('click', openPanel);
     panel.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closePanel(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) closePanel(); });
 
     $('#svc-add').addEventListener('click', () => { readRows(); draft.push({ name: '', price: '', dur: '' }); renderRows(); });
     svcList.addEventListener('click', (e) => {
@@ -495,32 +689,45 @@
     $('#p-save').addEventListener('click', () => {
       readRows();
       const fail = (msg) => { panelErr.textContent = msg; panelErr.classList.remove('hidden'); panelErr.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+      if (!$('#p-legal').checked) return fail('Необходимо подтвердить согласие с условиями использования');
       const photo = $('#p-photo').value.trim();
-      if (photo && !/^https?:\/\//i.test(photo)) return fail('Ссылка на фото должна начинаться с https://');
+      if (photo && !/^https?:\/\//i.test(photo)) return fail('Ссылка на главное фото должна начинаться с https://');
       const services = draft.filter((s) => s.name.trim()).map((s) => ({ name: s.name, price: String(s.price).replace(/\s/g, '').replace(',', '.'), dur: s.dur }));
       if (services.some((s) => s.price === '' || isNaN(s.price))) return fail('Укажите цену каждой услуги числом');
       const gal = $('#p-gallery').value.split(/[\s,]+/).filter(Boolean);
-      if (gal.some((u) => !/^https?:\/\//i.test(u))) return fail('Ссылки на фото работ должны начинаться с https://');
+      if (gal.some((u) => !/^https?:\/\//i.test(u))) return fail('Каждая ссылка в портфолио должна начинаться с https://');
       const slots = parseSlots($('#p-slots').value);
-      if (!slots) return fail('Время укажите через запятую, например: 10:00, 12:30, 15:00');
-      const c = clean({ name: $('#p-name').value, desc: $('#p-desc').value, photo: photo, gallery: gal, chatId: $('#p-chat').value, services: services, slots: slots });
-      if (!c) return fail('Проверьте имя, Chat ID (только цифры) и наличие хотя бы одной услуги');
+      if (!slots) return fail('Время укажите в формате ЧЧ:ММ через запятую, например: 10:00, 12:30');
+      const c = clean({
+        name: $('#p-name').value,
+        desc: $('#p-desc').value,
+        photo: photo,
+        addr: $('#p-addr').value,
+        hint: $('#p-hint').value,
+        gallery: gal,
+        chatId: $('#p-chat').value,
+        services: services,
+        slots: slots
+      });
+      if (!c) return fail('Проверьте имя, корректность Chat ID (только цифры) и наличие хотя бы одной услуги');
 
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(c)); } catch (e) { /* хранилище недоступно */ }
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(c)); } catch (e) {}
       panelErr.classList.add('hidden');
-      applyConfig(c);   // страница обновляется сразу
+      applyConfig(c);
       fillPanel(c);
-      showLink(c);      // ссылка для клиентов
+      showLink(c);
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     });
 
     $('#p-copy').addEventListener('click', async () => {
       const box = $('#p-link'), btn = $('#p-copy');
       try { await navigator.clipboard.writeText(box.value); }
-      catch (e) { box.select(); box.setSelectionRange(0, box.value.length); document.execCommand('copy'); }
-      btn.textContent = '✓ Ссылка скопирована';
-      setTimeout(() => { btn.textContent = '📋 Скопировать ссылку для клиентов'; }, 2000);
+      catch (e) { box.select(); document.execCommand('copy'); }
+      btn.textContent = '✓ Ссылка для клиентов скопирована';
+      setTimeout(() => { btn.textContent = '📋 Скопировать клиентскую ссылку'; }, 2000);
     });
+  } else {
+    settingsBtn.remove();
   }
 
   // ---------- Окно записи ----------
@@ -575,32 +782,27 @@
   function openModal(service, trigger) {
     lastTrigger = trigger;
     state = { service, date: DAYS.find(dayFree) || DAYS[0], slot: null };
-    $('#sheet-service').textContent = [service.name, fmtPrice(service.price), service.dur].filter(Boolean).join(', ');
+    $('#sheet-service').textContent = [service.name, fmtPrice(service.price), service.dur].filter(Boolean).join(' • ');
     formView.classList.remove('hidden');
     doneView.classList.add('hidden');
-    [nameErr, phoneErr, slotErr].forEach((el) => el.classList.add('hidden'));
+    [nameErr, phoneErr, slotErr, sendErr].forEach((el) => el.classList.add('hidden'));
     consentEl.checked = false;
     consentErr.classList.add('hidden');
     syncConsent();
     renderDates();
     renderSlots();
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
+    setSheet(modal, true);
     sheet.focus({ preventScroll: true });
   }
 
   function closeModal() {
-    modal.classList.remove('open');
-    modal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
+    setSheet(modal, false);
     if (lastTrigger) lastTrigger.focus({ preventScroll: true });
   }
 
   modal.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
 
-  // ---------- Поля ввода ----------
+  // ---------- Ввод телефона и имени ----------
   phoneEl.addEventListener('input', () => {
     let d = phoneEl.value.replace(/\D/g, '');
     if (d[0] === '7' || d[0] === '8') d = d.slice(1);
@@ -619,19 +821,50 @@
     nameErr.classList.add('hidden');
   });
 
-  // ---------- Отправка в Telegram ----------
-  // В режиме Markdown символы _ * ` [ в данных клиента нужно экранировать
+  // ---------- Генерация .ics файла для Календаря клиента ----------
+  $('#cal-btn').addEventListener('click', () => {
+    if (!state.service || !state.date || !state.slot) return;
+    const [h, m] = state.slot.split(':').map(Number);
+    const start = new Date(state.date);
+    start.setHours(h, m, 0, 0);
+    const end = new Date(start.getTime() + 90 * 60000);
+    const fmtIcs = (d) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'BEGIN:VEVENT',
+      'DTSTART:' + fmtIcs(start),
+      'DTEND:' + fmtIcs(end),
+      'SUMMARY:' + state.service.name + ' (' + config.name + ')',
+      'LOCATION:' + (config.addr || ''),
+      'DESCRIPTION:Запись на процедуру: ' + state.service.name + '. Стоимость: ' + fmtPrice(state.service.price),
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'booking.ics';
+    a.click();
+  });
+
+  // ---------- Отправка в Telegram с кнопкой быстрого ответа ----------
   const escMd = (s) => String(s).replace(/([_*`\[])/g, '\\$1');
 
   function buildMessage({ service, date, time, name, phone }) {
+    const cleanDigits = phone.replace(/\D/g, '');
+    const waText = encodeURIComponent(`Здравствуйте, ${name}! Подтверждаю вашу запись на «${service.name}» (${date} в ${time}).${config.addr ? ' Адрес: ' + config.addr : ''}`);
+    const waUrl = `https://wa.me/${cleanDigits}?text=${waText}`;
+
     return '🔔 *Новая запись!*\n\n'
-      + `💅 Услуга: ${escMd(service.name)}\n`
+      + `💅 Услуга: *${escMd(service.name)}*\n`
       + `💰 Стоимость: ${fmtPrice(service.price)}\n`
       + `📅 Дата: ${date}\n`
-      + `⏰ Время: ${time}\n`
-      + `👤 Имя: ${escMd(name)}\n`
-      + `📞 Телефон: ${escMd(phone)}\n`
-      + '✅ Согласие на обработку персональных данных: дано';
+      + `⏰ Время: *${time}*\n`
+      + `👤 Клиент: ${escMd(name)}\n`
+      + `📞 Телефон: \`${escMd(phone)}\`\n`
+      + `✅ Согласие 152-ФЗ: подтверждено\n\n`
+      + `💬 [Отправить подтверждение в WhatsApp](${waUrl})`;
   }
 
   async function sendToTelegram(text) {
@@ -641,7 +874,12 @@
       const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: String(config.chatId), text: text, parse_mode: 'Markdown' }),
+        body: JSON.stringify({
+          chat_id: String(config.chatId),
+          text: text,
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
+        }),
         signal: ctrl.signal
       });
       const data = await res.json();
@@ -652,36 +890,32 @@
     }
   }
 
-  // ---------- Подтверждение ----------
+  // ---------- Подтверждение и Политика ----------
   const confirmBtn = $('#confirm');
   const sendErr = $('#send-err');
   const consentEl = $('#consent'), consentErr = $('#consent-err');
   const policy = $('#policy'), policySheet = $('#policy-sheet'), policyLink = $('#open-policy');
   let sending = false;
 
-  // Кнопка активна только при отмеченном согласии (и не во время отправки)
   const syncConsent = () => {
     confirmBtn.disabled = sending || !consentEl.checked;
     if (consentEl.checked) consentErr.classList.add('hidden');
   };
   consentEl.addEventListener('change', syncConsent);
 
-  function openPolicy() {
-    policy.classList.add('open');
-    policy.setAttribute('aria-hidden', 'false');
-    policySheet.focus({ preventScroll: true });
-  }
-  function closePolicy() {
-    policy.classList.remove('open');
-    policy.setAttribute('aria-hidden', 'true');
-    policyLink.focus({ preventScroll: true });
-  }
+  function openPolicy() { setSheet(policy, true); policySheet.focus({ preventScroll: true }); }
+  function closePolicy() { setSheet(policy, false); policyLink.focus({ preventScroll: true }); }
+
   policyLink.addEventListener('click', (e) => { e.preventDefault(); openPolicy(); });
   policy.addEventListener('click', (e) => { if (e.target.closest('[data-close-policy]')) closePolicy(); });
-  // Escape сначала закрывает политику, а не окно записи под ней
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && policy.classList.contains('open')) { e.stopImmediatePropagation(); closePolicy(); }
-  }, true);
+    if (e.key !== 'Escape') return;
+    if (lb.classList.contains('open')) { closeLightbox(); return; }
+    if (policy.classList.contains('open')) { closePolicy(); return; }
+    if (modal.classList.contains('open')) { closeModal(); return; }
+    if (panel.classList.contains('open')) { closePanel(); }
+  });
 
   confirmBtn.addEventListener('click', async () => {
     if (confirmBtn.disabled) return;
@@ -690,7 +924,7 @@
     const name = nameEl.value.trim();
     const phoneOk = phoneEl.value.replace(/\D/g, '').length === 11;
     const nameOk = name.length >= 2;
-    const slotOk = !!state.slot;
+    const slotOk = Boolean(state.slot);
     let firstBad = null;
 
     slotErr.classList.toggle('hidden', slotOk);
@@ -717,7 +951,6 @@
     const phone = phoneEl.value;
     const label = confirmBtn.textContent;
 
-    // Кнопка блокируется на время отправки
     sending = true;
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Отправка...';
@@ -726,26 +959,30 @@
     try {
       await sendToTelegram(buildMessage({ service: s, date: dateText, time: time, name: name, phone: phone }));
 
-      // Успех: окно подтверждения для клиента
       $('#done-text').textContent = `${name}, ждём вас в ${time}`;
       $('#sum-service').textContent = s.name;
       $('#sum-date').textContent = dateText;
       $('#sum-time').textContent = time;
       $('#sum-price').textContent = fmtPrice(s.price);
 
+      if (config.addr) {
+        $('#sum-addr').textContent = config.addr;
+        $('#sum-addr-row').classList.remove('hidden');
+        $('#sum-addr-row').classList.add('flex');
+      } else {
+        $('#sum-addr-row').classList.add('hidden');
+      }
+
       formView.classList.add('hidden');
       doneView.classList.remove('hidden');
       doneView.scrollTop = 0;
 
-      // Очищаем поля формы
       nameEl.value = '';
       phoneEl.value = '';
       consentEl.checked = false;
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } catch (err) {
-      console.error(err);
-      sendErr.textContent = 'Не удалось отправить запись. Проверьте интернет и попробуйте ещё раз. ('
-        + (err && err.message ? err.message : 'неизвестная ошибка') + ')';
+      sendErr.textContent = 'Не удалось отправить запись. Проверьте интернет или напишите мастеру напрямую.';
       sendErr.classList.remove('hidden');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
     } finally {
