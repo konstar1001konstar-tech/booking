@@ -1,0 +1,6 @@
+bucket_name        = "booking-card-your-name"
+deploy_function    = false
+lockbox_version_id = ""
+public_url         = ""
+set_webhook        = true
+domain             = ""

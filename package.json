@@ -2,7 +2,9 @@
   "name": "booking-card",
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -i src/input.css -o styles.css --minify"
+    "build:css": "tailwindcss -i src/input.css -o styles.css --minify",
+    "test": "node --test functions/test/backend.test.js",
+    "start:mock": "node local/server.js"
   },
   "devDependencies": {
     "tailwindcss": "3.4.17"

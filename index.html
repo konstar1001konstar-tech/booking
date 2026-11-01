@@ -9,24 +9,46 @@
 <meta property="og:locale" content="ru_RU">
 <meta property="og:title" content="Онлайн-запись к мастеру">
 <meta property="og:description" content="Услуги, портфолио и заявка на удобное время. Мастер подтверждает запись лично.">
+<meta property="og:url" content="">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Онлайн-запись к мастеру">
 <meta name="twitter:description" content="Услуги, портфолио и заявка на удобное время. Мастер подтверждает запись лично.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://telegram.org; style-src 'self'; img-src 'self' data: blob: https:; connect-src 'self' https://api.telegram.org; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://telegram.org; style-src 'self'; img-src 'self' data: blob: https:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Онлайн-запись к мастеру</title>
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="32x32">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="site.webmanifest">
-<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body class="bg-milk text-[#2a2024] antialiased">
+
+  <div id="loading-view" class="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
+    <p class="text-[15px] text-neutral-600">Открываем страницу…</p>
+  </div>
+
+  <div id="preparing-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
+    <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
+      <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Онлайн-запись</span>
+      <h1 class="display mt-4 text-[28px] leading-tight">Страница ещё готовится</h1>
+      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Мастер ещё не открыл запись. Зайдите позже или попросите новую ссылку.</p>
+    </div>
+  </div>
+
+  <div id="admin-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
+    <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
+      <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Панель мастера</span>
+      <h1 class="display mt-4 text-[28px] leading-tight">Вход через Telegram</h1>
+      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Откройте бота и отправьте /start. Бот пришлёт одноразовую ссылку для входа. Она действует 10 минут.</p>
+      <p id="admin-error" class="is-hidden mt-4 text-sm text-red-600" role="alert"></p>
+    </div>
+  </div>
 
   <div id="lock-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
     <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
       <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Умная визитка мастера</span>
       <h1 class="display mt-4 text-[28px] leading-tight">Сервис персональной онлайн-записи</h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Страница открывается по персональной ссылке мастера. Клиенту её присылают лично, мастеру — ссылку на панель настройки.</p>
+      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Страница открывается по короткой ссылке мастера. Клиенту её присылают лично, мастеру — ссылку для входа из Telegram-бота.</p>
       <p class="mt-4 text-xs text-neutral-600">Если ссылка не открывается, попросите отправить её ещё раз.</p>
     </div>
   </div>
@@ -35,7 +57,7 @@
     <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
       <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Онлайн-запись</span>
       <h1 class="display mt-4 text-[28px] leading-tight">Ссылка повреждена</h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Не удалось прочитать настройки мастера. Попросите прислать актуальную ссылку на запись.</p>
+      <p id="broken-text" class="mt-3 text-[15px] leading-relaxed text-neutral-600">Не удалось прочитать настройки мастера. Попросите прислать актуальную ссылку на запись.</p>
     </div>
   </div>
 
@@ -49,6 +71,7 @@
       <div class="rise px-6 pt-6 text-center">
         <h1 id="master-name" class="display text-[32px] leading-tight"></h1>
         <p id="master-desc" class="mt-2 text-[16px] text-neutral-600"></p>
+        <p id="draft-note" class="is-hidden mt-3 text-sm text-neutral-600">Страница ещё не открыта клиентам. Заполните услуги и сохраните профиль.</p>
         <p class="mt-4 inline-flex rounded-full bg-white px-3.5 py-1.5 text-sm text-neutral-600 shadow-sm ring-1 ring-ios/60">Это заявка — мастер подтвердит время</p>
       </div>
     </header>
@@ -129,7 +152,7 @@
 
         <h3 class="mt-6 text-sm font-medium text-neutral-600">Время</h3>
         <div id="slots" class="mt-2 grid grid-cols-4 gap-2"></div>
-        <p class="mt-2 text-sm text-neutral-600">Это заявка — мастер подтвердит время.</p>
+        <p class="mt-2 text-sm text-neutral-600">Это заявка — мастер подтвердит время. Уже занятые окна отмечены.</p>
         <p id="slot-err" class="is-hidden mt-1.5 text-sm text-red-600">Выберите время</p>
 
         <label class="mt-6 block" for="name">
@@ -214,12 +237,18 @@
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 id="panel-title" class="text-xl font-semibold">Конструктор визитки</h2>
-            <p class="mt-0.5 text-sm text-neutral-600">Заполните профиль и скопируйте ссылку для клиентов</p>
+            <p class="mt-0.5 text-sm text-neutral-600">Профиль хранится на сервере. Ссылка для клиентов короткая.</p>
+            <button id="p-logout" type="button" class="mt-2 text-sm font-medium text-tg">Выйти</button>
           </div>
           <button type="button" data-close aria-label="Закрыть"
                   class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-neutral-600">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg>
           </button>
+        </div>
+
+        <div id="bookings-block" class="mt-5">
+          <h3 class="text-sm font-medium text-neutral-600">Заявки</h3>
+          <div id="booking-list" class="mt-2 space-y-2 text-sm"></div>
         </div>
 
         <label class="mt-5 block" for="p-name">
@@ -307,12 +336,7 @@
           </label>
         </div>
 
-        <label class="mt-4 block" for="p-chat">
-          <span class="text-sm font-medium text-neutral-600">Telegram Chat ID мастера</span>
-          <input id="p-chat" type="text" inputmode="numeric" placeholder="Например, 123456789"
-                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
-          <span class="mt-1 block text-xs text-neutral-600">Цифровой ID можно узнать у @userinfobot. Токен бота в ссылку не записывается: он должен остаться на сервере.</span>
-        </label>
+        <p class="mt-4 text-xs leading-snug text-neutral-600">Уведомления о заявках приходят в Telegram, с которого вы вошли. Номер чата с этой страницы не отправляется.</p>
 
         <label class="mt-4 block" for="p-gallery">
           <span class="text-sm font-medium text-neutral-600">Портфолио (до 10 https-ссылок, с новой строки)</span>
@@ -326,7 +350,7 @@
 
         <fieldset class="mt-6 rounded-2xl bg-ios/60 p-3.5">
           <legend class="px-1 text-sm font-medium text-neutral-600">График приёма</legend>
-          <p class="text-xs text-neutral-600">Дни, горизонт и часы сохраняются в ссылке. Занятость слотов страница не знает — это заявка.</p>
+          <p class="text-xs text-neutral-600">Дни, горизонт и часы сохраняются в профиле. Занятые слоты клиент видит по уже сохранённым заявкам.</p>
           <div id="p-days" class="mt-3 flex flex-wrap gap-2"></div>
           <label class="mt-3 block" for="p-horizon">
             <span class="text-xs font-medium text-neutral-600">На сколько дней вперёд открыта запись</span>
@@ -373,7 +397,7 @@
         </div>
 
         <p id="panel-err" class="is-hidden mt-3 text-sm text-red-600" role="alert"></p>
-        <button id="p-save" type="button" class="mt-4 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white">Сгенерировать витрину</button>
+        <button id="p-save" type="button" class="mt-4 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white">Сохранить профиль</button>
 
         <div id="link-block" class="is-hidden mt-6 rounded-2xl bg-ios p-4">
           <h3 class="text-sm font-semibold text-tg">Готовая ссылка для клиентов</h3>
@@ -389,7 +413,7 @@
     <p class="mx-auto max-w-md px-6 py-12 text-center text-[15px] text-neutral-600">Для онлайн-записи нужен JavaScript.</p>
   </noscript>
 
-<script src="calendar.js"></script>
-<script src="app.js"></script>
+<script src="/calendar.js"></script>
+<script src="/app.js"></script>
 </body>
 </html>

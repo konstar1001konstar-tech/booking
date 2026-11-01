@@ -1,0 +1,11 @@
+{
+  "name": "booking-functions",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ydb-sdk": "5.11.1"
+  }
+}

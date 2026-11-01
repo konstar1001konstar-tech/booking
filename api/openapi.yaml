@@ -1,0 +1,108 @@
+openapi: 3.0.0
+info:
+  title: booking-card
+  version: 1.0.0
+  description: |
+    Короткий адрес мастера и API записи. Статика отдаётся из Object Storage,
+    страницы и /api — одной Cloud Function. Плейсхолдеры подставляет Terraform.
+paths:
+  /:
+    get:
+      summary: Корневая страница
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: ${function_id}
+        tag: "$latest"
+        service_account_id: ${gateway_sa_id}
+  /admin:
+    get:
+      summary: Вход мастера
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: ${function_id}
+        tag: "$latest"
+        service_account_id: ${gateway_sa_id}
+  /api/{proxy+}:
+    parameters:
+      - name: proxy
+        in: path
+        required: true
+        schema:
+          type: string
+    x-yc-apigateway-any-method:
+      summary: API записи, слотов, панели и вебхука Telegram
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: ${function_id}
+        tag: "$latest"
+        service_account_id: ${gateway_sa_id}
+  /styles.css:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: styles.css
+        service_account_id: ${gateway_sa_id}
+  /app.js:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: app.js
+        service_account_id: ${gateway_sa_id}
+  /calendar.js:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: calendar.js
+        service_account_id: ${gateway_sa_id}
+  /favicon.svg:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: favicon.svg
+        service_account_id: ${gateway_sa_id}
+  /favicon.ico:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: favicon.ico
+        service_account_id: ${gateway_sa_id}
+  /apple-touch-icon.png:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: apple-touch-icon.png
+        service_account_id: ${gateway_sa_id}
+  /site.webmanifest:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: site.webmanifest
+        service_account_id: ${gateway_sa_id}
+  /robots.txt:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: robots.txt
+        service_account_id: ${gateway_sa_id}
+  /{slug}:
+    get:
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      summary: Страница мастера с подставленными OG-тегами
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: ${function_id}
+        tag: "$latest"
+        service_account_id: ${gateway_sa_id}
