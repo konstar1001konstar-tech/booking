@@ -1,6 +1,6 @@
 'use strict';
 
-const THEMES = ['plum', 'rose', 'wine', 'olive', 'sand', 'ink'];
+const { THEMES } = require('./themes');
 const CATEGORIES = ['manicure', 'massage', 'brows', 'other'];
 const DEFAULT_TZ = 'Europe/Moscow';
 const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
