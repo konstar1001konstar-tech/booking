@@ -15,6 +15,8 @@ class MemoryRepo {
     this.rates = new Map();
     this.logins = new Map();
     this.botState = new Map();
+    this.outbox = new Map();
+    this._ver = 0;
     this._chain = Promise.resolve();
   }
 
@@ -164,5 +166,38 @@ class MemoryRepo {
     });
   }
 }
+
+Object.assign(MemoryRepo.prototype, {
+  putOutbox(item) {
+    return this._lock(() => {
+      this._ver += 1;
+      this.outbox.set(item.id, { value: clone(item), etag: 'v' + this._ver });
+    });
+  },
+  listOutbox() {
+    return this._lock(() => [...this.outbox.keys()].sort());
+  },
+  getOutbox(id) {
+    return this._lock(() => {
+      const row = this.outbox.get(id);
+      return row ? { value: clone(row.value), etag: row.etag } : null;
+    });
+  },
+  claimOutbox(id, value, etag) {
+    return this._lock(() => {
+      const row = this.outbox.get(id);
+      if (!row || row.etag !== etag) return null;
+      this._ver += 1;
+      const next = { value: clone(value), etag: 'v' + this._ver };
+      this.outbox.set(id, next);
+      return next.etag;
+    });
+  },
+  deleteOutbox(id) {
+    return this._lock(() => {
+      this.outbox.delete(id);
+    });
+  }
+});
 
 module.exports = { MemoryRepo };
