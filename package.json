@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -i src/input.css -o styles.css --minify",
-    "test": "node --test functions/test/backend.test.js functions/test/s3repo.test.js functions/test/outbox.test.js functions/test/webhook.test.js functions/test/photos.test.js functions/test/themes.test.js functions/test/brand.test.js",
+    "test": "node --test functions/test/backend.test.js functions/test/s3repo.test.js functions/test/outbox.test.js functions/test/webhook.test.js functions/test/photos.test.js functions/test/themes.test.js functions/test/brand.test.js functions/test/compliance.test.js",
     "start:mock": "node local/server.js"
   },
   "devDependencies": {

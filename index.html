@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5B3A5E">
-<meta name="description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.">
+<meta name="description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер видит заявки в панели и подтверждает запись в один клик.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:site_name" content="БьютиЛинк">
 <meta name="application-name" content="БьютиЛинк">
 <meta name="apple-mobile-web-app-title" content="БьютиЛинк">
 <meta property="og:title" content="БьютиЛинк — онлайн-запись к бьюти-мастеру">
-<meta property="og:description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.">
+<meta property="og:description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер видит заявки в панели и подтверждает запись в один клик.">
 <meta property="og:url" content="">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="БьютиЛинк — онлайн-запись к бьюти-мастеру">
-<meta name="twitter:description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.">
+<meta name="twitter:description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер видит заявки в панели и подтверждает запись в один клик.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://telegram.org; style-src 'self'; img-src 'self' data: blob: https:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>БьютиЛинк — онлайн-запись к бьюти-мастеру</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -54,9 +54,40 @@
     <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
       <span class="inline-flex items-center gap-2"><svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#bl-mark"/></svg><span class="wordmark text-[26px]"><b>Бьюти</b><i>Линк</i></span></span>
       <p class="mt-4 text-xs font-semibold uppercase tracking-wider text-muted">Панель мастера</p>
-      <h1 class="display mt-1 text-[28px] leading-tight">Вход через Telegram</h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-muted">Откройте бота и отправьте /start. Бот пришлёт одноразовую ссылку для входа. Она действует 10 минут.</p>
+      <div id="login-box">
+        <h1 class="display mt-1 text-[28px] leading-tight">Вход и регистрация</h1>
+        <p class="mt-3 text-[15px] leading-relaxed text-muted">Войдите через Яндекс ID или Mail.ru. Если страницы у вас ещё нет — создадим её за минуту, бот не нужен.</p>
+        <div class="mt-6 space-y-2.5">
+          <a id="login-yandex" href="/api/auth/yandex/start" class="is-hidden flex w-full items-center justify-center gap-2.5 rounded-2xl bg-ink py-4 text-base font-semibold text-milk">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-milk" aria-hidden="true">Я</span>Войти с Яндекс ID</a>
+          <a id="login-vkid" href="/api/auth/vkid/start" class="is-hidden flex w-full items-center justify-center gap-2.5 rounded-2xl bg-ios py-4 text-base font-semibold text-ink ring-1 ring-line">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-tg text-sm font-bold text-ontg" aria-hidden="true">@</span>Войти через Mail.ru</a>
+        </div>
+        <p id="login-none" class="is-hidden mt-5 text-sm leading-relaxed text-muted">Вход через Яндекс ID и Mail.ru скоро заработает.</p>
+        <p id="login-tg" class="is-hidden mt-5 text-[13px] leading-relaxed text-muted">Уже работали через Telegram? Откройте бота и отправьте /start — он пришлёт одноразовую ссылку для входа (10 минут). В настройках привяжите Яндекс ID или Mail.ru.</p>
+      </div>
+      <form id="signup-box" class="is-hidden text-left" novalidate>
+        <h1 class="display mt-1 text-center text-[28px] leading-tight">Новая страница</h1>
+        <p class="mt-3 text-center text-[15px] leading-relaxed text-muted">Придумайте короткий адрес — по нему клиенты будут открывать запись.</p>
+        <label class="mt-5 block" for="su-slug">
+          <span class="text-sm font-medium text-muted">Адрес страницы (латиница, 3–32 символа)</span>
+          <input id="su-slug" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="32" placeholder="anna-nails"
+                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+        <p id="su-preview" class="mt-1 break-all text-xs text-muted"></p>
+        <label class="mt-4 block" for="su-name">
+          <span class="text-sm font-medium text-muted">Имя на странице</span>
+          <input id="su-name" type="text" maxlength="60" placeholder="Анна | маникюр"
+                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+        </label>
+        <div class="mt-4 flex items-start gap-2.5">
+          <input id="su-terms" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-tg">
+          <label for="su-terms" class="text-xs leading-snug text-muted">Принимаю <a href="/terms-masters" target="_blank" rel="noopener" class="font-medium text-tg underline">условия для мастеров</a> (включая поручение на обработку данных клиентов) и <a href="/privacy" target="_blank" rel="noopener" class="font-medium text-tg underline">политику конфиденциальности</a>.</label>
+        </div>
+        <button id="su-submit" type="submit" class="mt-5 w-full rounded-2xl bg-tg active:bg-tg-dark py-4 text-base font-semibold text-ontg">Создать страницу</button>
+      </form>
       <p id="admin-error" class="is-hidden mt-4 text-sm text-red-600" role="alert"></p>
+      <p class="mt-6 text-xs text-muted"><a href="/privacy" class="underline">Политика конфиденциальности</a> · <a href="/terms-masters" class="underline">Условия для мастеров</a></p>
     </div>
   </div>
 
@@ -64,7 +95,7 @@
     <div class="mx-auto flex min-h-dvh max-w-md flex-col px-6 pb-[calc(28px+env(safe-area-inset-bottom))] pt-[calc(40px+env(safe-area-inset-top))]">
       <div class="rise flex justify-center"><span class="inline-flex items-center gap-2 gap-3"><svg class="brand-mark" width="44" height="44" aria-hidden="true"><use href="#bl-mark"/></svg><span class="wordmark text-[40px]"><b>Бьюти</b><i>Линк</i></span></span></div>
       <h1 class="brand rise rise-1 mt-9 text-center text-[36px] font-semibold leading-[1.08] text-ink">Красивая страница записи для <span class="whitespace-nowrap">бьюти-мастера</span></h1>
-      <p class="rise rise-1 mt-4 text-center text-[16px] leading-relaxed text-muted">Услуги, цены, портфолио и свободные окошки — по одной короткой ссылке. Клиент оставляет заявку, вы подтверждаете её в Telegram.</p>
+      <p class="rise rise-1 mt-4 text-center text-[16px] leading-relaxed text-muted">Услуги, цены, портфолио и свободные окошки — по одной короткой ссылке. Клиент оставляет заявку, вы подтверждаете её в панели — а уведомление может прийти и в Telegram.</p>
 
       <div class="rise rise-2 mt-8 overflow-hidden rounded-[28px] bg-surface shadow-sm ring-1 ring-line" aria-hidden="true">
         <div class="hero-grad px-5 pb-4 pt-5">
@@ -93,15 +124,20 @@
       </div>
 
       <ul class="rise rise-3 mt-8 space-y-3 text-left text-[15px] leading-snug">
-        <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Одна ссылка</b> <span class="text-muted">— для Instagram, ВКонтакте и мессенджеров.</span></span></li>
-        <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Заявки в Telegram</b> <span class="text-muted">— подтверждайте или отменяйте в один тап.</span></span></li>
+        <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Одна ссылка</b> <span class="text-muted">— для ВКонтакте, MAX, Telegram и других мессенджеров.</span></span></li>
+        <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Заявки в панели</b> <span class="text-muted">— подтверждайте или отменяйте в один тап, уведомления — в Telegram по желанию.</span></span></li>
         <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Ваш стиль</b> <span class="text-muted">— фото из галереи и цвет страницы под ваш бренд.</span></span></li>
       </ul>
 
       <div class="mt-auto pt-10 text-center">
-        <p class="text-[13px] leading-relaxed text-muted">Мастерам: откройте нашего Telegram-бота и отправьте /start — он создаст страницу и пришлёт ссылку для входа.</p>
+        <a href="/admin" class="block w-full rounded-2xl bg-tg active:bg-tg-dark py-4 text-base font-semibold text-ontg">Создать страницу или войти</a>
+        <p class="mt-3 text-[13px] leading-relaxed text-muted">Мастерам: вход и регистрация через Яндекс ID или Mail.ru.</p>
         <p class="mt-2 text-xs text-muted">Клиентам: страница мастера открывается по его личной ссылке. Если она не открывается, попросите прислать её ещё раз.</p>
-        <p class="mt-6 text-xs text-muted">© БьютиЛинк</p>
+        <footer class="mt-8 border-t border-line pt-5 text-xs leading-relaxed text-muted">
+          <p><a href="/privacy" class="underline">Политика конфиденциальности</a> · <a href="/terms-masters" class="underline">Условия для мастеров</a></p>
+          <p id="owner-req" class="mt-2"></p>
+          <p class="mt-2">© БьютиЛинк</p>
+        </footer>
       </div>
     </div>
   </div>
@@ -166,6 +202,7 @@
         <svg class="brand-mark" width="16" height="16" aria-hidden="true"><use href="#bl-mark"/></svg>
         <span class="wordmark text-[17px]"><b>Бьюти</b><i>Линк</i></span>
       </a>
+      <p class="mt-1 text-xs text-muted"><a href="/privacy" class="underline">Политика конфиденциальности</a></p>
     </footer>
   </main>
 
@@ -233,7 +270,7 @@
         <div class="mt-6">
           <div class="flex items-start gap-3">
             <input id="consent" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 rounded accent-tg">
-            <label for="consent" class="text-xs leading-snug text-muted">Я даю согласие на обработку персональных данных для заявки на услугу.</label>
+            <label for="consent" class="text-xs leading-snug text-muted">Мне исполнилось 14 лет. Даю мастеру согласие на обработку имени и телефона для записи на услугу; данные хранятся в России 12 месяцев после визита, затем удаляются.</label>
           </div>
           <p class="mt-2 pl-8 text-xs leading-snug text-muted">
             <button id="open-consent" type="button" class="font-medium text-tg underline underline-offset-2">Текст согласия</button>
@@ -305,6 +342,19 @@
                   class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-muted">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg>
           </button>
+        </div>
+
+        <div id="operator-warn" class="is-hidden mt-4 rounded-2xl bg-red-600/10 p-3.5 text-sm leading-snug text-red-600" role="alert"></div>
+
+        <div id="acc-block" class="mt-4 rounded-2xl bg-ios/60 p-3.5">
+          <h3 class="text-sm font-medium text-muted">Вход и уведомления</h3>
+          <p id="acc-status" class="mt-1 text-xs leading-snug text-muted"></p>
+          <div class="mt-2 space-y-2">
+            <a id="acc-yandex" href="/api/auth/yandex/start?mode=link" class="is-hidden block w-full rounded-xl bg-surface py-2.5 text-center text-sm font-semibold text-tg ring-1 ring-line">Привязать Яндекс ID</a>
+            <a id="acc-vkid" href="/api/auth/vkid/start?mode=link" class="is-hidden block w-full rounded-xl bg-surface py-2.5 text-center text-sm font-semibold text-tg ring-1 ring-line">Привязать Mail.ru</a>
+            <button id="acc-tg" type="button" class="is-hidden w-full rounded-xl bg-surface py-2.5 text-center text-sm font-semibold text-tg ring-1 ring-line">Подключить Telegram для уведомлений</button>
+          </div>
+          <p class="mt-2 text-xs leading-snug text-muted">В Telegram приходят только услуга, дата и время — имя и телефон клиента видны лишь здесь, в панели.</p>
         </div>
 
         <div id="bookings-block" class="mt-5">
@@ -456,14 +506,19 @@
             <input id="p-telegram" type="text" maxlength="80" placeholder="@username или https://t.me/username"
                    class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
-          <label class="block" for="p-whatsapp">
-            <span class="text-xs font-medium text-muted">WhatsApp (номер)</span>
-            <input id="p-whatsapp" type="tel" maxlength="24" placeholder="79991234567"
+          <label class="block" for="p-vk">
+            <span class="text-xs font-medium text-muted">ВКонтакте</span>
+            <input id="p-vk" type="text" maxlength="120" autocapitalize="none" placeholder="https://vk.com/username или @username"
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+          </label>
+          <label class="block" for="p-max">
+            <span class="text-xs font-medium text-muted">MAX</span>
+            <input id="p-max" type="url" maxlength="160" autocapitalize="none" placeholder="https://max.ru/..."
                    class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
         </div>
 
-        <p class="mt-4 text-xs leading-snug text-muted">Уведомления о заявках приходят в Telegram, с которого вы вошли. Номер чата с этой страницы не отправляется.</p>
+        <p class="mt-4 text-xs leading-snug text-muted">Уведомления о заявках приходят в подключённый Telegram, без имени и телефона клиента. Номер чата с этой страницы не отправляется.</p>
 
         <div class="mt-4">
           <div class="flex items-baseline justify-between">
@@ -505,9 +560,10 @@
         </fieldset>
 
         <fieldset class="mt-4 rounded-2xl bg-ios/60 p-3.5">
-          <legend class="px-1 text-sm font-medium text-muted">Данные оператора для политики и согласия</legend>
+          <legend class="px-1 text-sm font-medium text-muted">Данные оператора для согласия клиентов</legend>
+          <p class="text-xs leading-snug text-muted">Вы — оператор персональных данных своих клиентов (152-ФЗ). Без ФИО, города и контакта для отзыва согласия запись не откроется.</p>
           <label class="mt-2 block" for="p-legal-name">
-            <span class="text-xs font-medium text-muted">ФИО</span>
+            <span class="text-xs font-medium text-muted">ФИО (обязательно)</span>
             <input id="p-legal-name" type="text" maxlength="120" placeholder="Фамилия Имя Отчество"
                    class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
@@ -519,21 +575,30 @@
               <option value="self">Самозанятый</option>
             </select>
           </label>
+          <label class="mt-3 block" for="p-city">
+            <span class="text-xs font-medium text-muted">Город (обязательно)</span>
+            <input id="p-city" type="text" maxlength="60" placeholder="Москва"
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+          </label>
           <label class="mt-3 block" for="p-inn">
-            <span class="text-xs font-medium text-muted">ИНН</span>
+            <span class="text-xs font-medium text-muted">ИНН (необязательно)</span>
             <input id="p-inn" type="text" inputmode="numeric" maxlength="12" placeholder="10 или 12 цифр"
                    class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
           <label class="mt-3 block" for="p-revoke">
-            <span class="text-xs font-medium text-muted">Контакт для отзыва согласия</span>
+            <span class="text-xs font-medium text-muted">Контакт для отзыва согласия (обязательно)</span>
             <input id="p-revoke" type="text" maxlength="120" placeholder="Телефон, почта или @telegram"
                    class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
+          <div class="mt-3 flex items-start gap-2.5">
+            <input id="p-pub-consent" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-tg">
+            <label for="p-pub-consent" class="text-xs leading-snug text-muted">Согласен(на) на публикацию на моей странице ФИО, статуса, ИНН и города, чтобы клиенты знали оператора их данных (ст. 10.1 152-ФЗ). Согласие можно отозвать, удалив страницу.</label>
+          </div>
         </fieldset>
 
         <div class="mt-5 flex items-start gap-2.5 rounded-xl bg-ios/70 p-3">
-          <input id="p-legal" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-tg">
-          <label for="p-legal" class="text-xs leading-snug text-muted">Я подтверждаю, что обладаю правами на размещаемые фотографии работ, самостоятельно выступаю оператором персональных данных своих клиентов (152-ФЗ) и освобождаю разработчика шаблона от претензий третьих лиц.</label>
+          <input id="p-terms" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-tg">
+          <label for="p-terms" class="text-xs leading-snug text-muted">Принимаю <a href="/terms-masters" target="_blank" rel="noopener" class="font-medium text-tg underline">условия для мастеров</a>, включая поручение БьютиЛинк обрабатывать данные моих клиентов, и подтверждаю права на загруженные фото.</label>
         </div>
 
         <p id="panel-err" class="is-hidden mt-3 text-sm text-red-600" role="alert"></p>

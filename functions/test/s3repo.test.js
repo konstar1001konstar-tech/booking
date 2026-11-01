@@ -145,3 +145,25 @@ test('telegram: relay mode sends token and key as headers', async () => {
   assert.equal(out.result.message_id, 5);
   assert.equal(seen[0].url, 'https://relay.example/api/tg/sendMessage');
 });
+
+test('s3 repo: мастер без Telegram, вход через провайдера, привязка чата, суточная метка', async () => {
+  const { repo, s3 } = makeRepo();
+  const web = Object.assign(master('web-only', ''), { ownerId: 'own123', identities: { yandex: { sub: '55' } } });
+  web.chatId = '';
+  await repo.insertMaster(web);
+  assert.equal([...s3.objects.keys()].some((k) => k.startsWith('data/chats/')), false);
+  assert.equal(await repo.putIdentity('yandex', '55', 'web-only'), true);
+  assert.equal(await repo.putIdentity('yandex', '55', 'web-only'), true);
+  assert.equal(await repo.putIdentity('yandex', '55', 'other'), false);
+  assert.equal(await repo.getIdentity('yandex', '55'), 'web-only');
+  assert.ok(s3.objects.has('data/idents/yandex/55.json'));
+  await repo.linkChat('web-only', '777');
+  assert.equal((await repo.getMasterByChat('777')).slug, 'web-only');
+  await repo.insertMaster(master('tg-master', 888));
+  await assert.rejects(repo.linkChat('web-only', '888'), { code: 'chat_taken' });
+  await repo.patchMaster('web-only', (cur) => ({ identities: Object.assign({}, cur.identities, { vkid: { sub: '9' } }) }));
+  assert.equal((await repo.getMasterBySlug('web-only')).identities.vkid.sub, '9');
+  assert.deepEqual((await repo.listMasterSlugs()).sort(), ['tg-master', 'web-only']);
+  assert.equal(await repo.claimOnce('2026-11-02'), true);
+  assert.equal(await repo.claimOnce('2026-11-02'), false);
+});

@@ -1,15 +1,45 @@
 'use strict';
 
 const { HttpError, RepoError } = require('./errors');
-const { validateSlug, sanitizeProfile, starterProfile, normalizeClientPhone } = require('./lib/profile');
+const { validateSlug, sanitizeProfile, starterProfile, normalizeClientPhone, operatorMissing } = require('./lib/profile');
 const { assertSlotOpen, dateText } = require('./lib/slots');
-const { DEFAULT_LIMITS, tooMany } = require('./lib/rate');
+const { DEFAULT_LIMITS, tooMany, rateKeySecret, hashPart } = require('./lib/rate');
 const { bookingMessage, bookingKeyboard } = require('./lib/html');
 const { sign, verify, randomId, cookie, readCookie, safeEqual, SESSION_MS, LOGIN_MS } = require('./lib/session');
 const { checkTelegramLogin } = require('./lib/telegram-auth');
 const { headerMap } = require('./http');
 const outbox = require('./outbox');
 const photos = require('./photos');
+const oauth = require('./oauth');
+
+const DEFAULT_RETENTION_MONTHS = 12;
+
+// Вход через Telegram (ссылка от бота и виджет) оставлен за флагом
+// ALLOW_TELEGRAM_LOGIN, пока владелец не привяжет Яндекс ID или Mail.ru.
+function telegramLoginAllowed(deps) {
+  return deps.allowTelegramLogin !== false;
+}
+
+// Кто владеет мастером: для зарегистрированных на сайте — ownerId, для
+// старых (из бота) — chat_id. Значение подписано в сессии, поэтому сессия
+// не переживает пересоздание мастера с тем же адресом.
+function ownerKey(master) {
+  return String(master.ownerId || master.chatId || '');
+}
+
+function ownerOf(deps) {
+  const o = deps.owner || {};
+  return {
+    fio: String(o.fio || '').trim(),
+    inn: String(o.inn || '').replace(/\D/g, ''),
+    email: String(o.email || '').trim()
+  };
+}
+
+function retentionMonths(deps) {
+  const n = Number(deps.retentionMonths);
+  return Number.isInteger(n) && n >= 1 && n <= 60 ? n : DEFAULT_RETENTION_MONTHS;
+}
 
 function secretsOf(deps) {
   return deps.secrets || { botToken: '', sessionSecret: '', webhookSecret: '' };
@@ -36,21 +66,51 @@ async function sessionFrom(event, deps) {
   const payload = verify(token, secret, nowOf(deps).getTime());
   if (!payload || payload.typ !== 'sess' || !payload.slug) return null;
   const master = await deps.repo.getMasterBySlug(payload.slug);
-  if (!master || String(master.chatId) !== String(payload.chatId)) return null;
+  const uid = String(payload.uid || payload.chatId || '');
+  if (!master || !uid || ownerKey(master) !== uid) return null;
   return master;
 }
 
 function requireMaster(master) {
-  if (!master) throw new HttpError(401, 'unauthorized', 'Войдите по ссылке из Telegram.');
+  if (!master) throw new HttpError(401, 'unauthorized', 'Войдите в панель мастера заново.');
   return master;
 }
 
 function publicProfile(master) {
+  const missing = operatorMissing(master.profile);
   return {
     ok: true,
     slug: master.slug,
     published: Boolean(master.published),
+    bookingOpen: missing.length === 0,
     profile: master.profile
+  };
+}
+
+function adminMe(deps, master) {
+  const ids = master.identities || {};
+  return {
+    ok: true,
+    slug: master.slug,
+    published: Boolean(master.published),
+    name: master.profile.name,
+    identities: Object.keys(ids).filter((k) => ids[k] && ids[k].sub),
+    telegram: Boolean(master.chatId),
+    operatorMissing: operatorMissing(master.profile),
+    termsAccepted: Boolean(master.profile.termsAt),
+    providers: oauth.enabledProviders(deps),
+    telegramLogin: telegramLoginAllowed(deps)
+  };
+}
+
+function publicConfig(deps) {
+  return {
+    ok: true,
+    providers: oauth.enabledProviders(deps),
+    telegramLogin: telegramLoginAllowed(deps),
+    bot: deps.botUsername || '',
+    owner: ownerOf(deps),
+    retentionMonths: retentionMonths(deps)
   };
 }
 
@@ -85,7 +145,7 @@ function sessionCookie(deps, master) {
   const token = sign({
     typ: 'sess',
     slug: master.slug,
-    chatId: String(master.chatId),
+    uid: ownerKey(master),
     exp
   }, secret);
   return cookie('bc_session', token, {
@@ -133,6 +193,9 @@ async function createBooking(deps, event, body) {
   if (!slugCheck.ok) throw new HttpError(404, 'not_found', 'Страница не найдена.');
   const master = await deps.repo.getMasterBySlug(slugCheck.slug);
   if (!master || !master.published) throw new HttpError(404, 'not_found', 'Страница не найдена.');
+  if (operatorMissing(master.profile).length) {
+    throw new HttpError(409, 'operator_missing', 'Онлайн-запись временно недоступна: мастер ещё не указал свои данные для согласия на обработку данных. Свяжитесь с мастером напрямую.');
+  }
   const service = (master.profile.services || []).find((item) => item.name === String(body.serviceName || '').trim());
   if (!service) throw new HttpError(400, 'validation', 'Такой услуги нет в прайсе.');
   const date = String(body.date || '');
@@ -141,10 +204,11 @@ async function createBooking(deps, event, body) {
   assertSlotOpen(master.profile, date, time, now);
   const limits = limitsOf(deps);
   const ip = event.ip || 'unknown';
-  if (await tooMany(deps.repo, 'ip:' + ip + ':' + master.slug, limits.ip, now.getTime())) {
+  const rateSecret = rateKeySecret(secretsOf(deps));
+  if (await tooMany(deps.repo, 'ip:' + hashPart(rateSecret, ip) + ':' + master.slug, limits.ip, now.getTime())) {
     throw new HttpError(429, 'rate_limited', 'Слишком много заявок с этого адреса. Попробуйте позже.');
   }
-  if (await tooMany(deps.repo, 'phone:' + phone + ':' + master.slug, limits.phone, now.getTime())) {
+  if (await tooMany(deps.repo, 'phone:' + hashPart(rateSecret, phone) + ':' + master.slug, limits.phone, now.getTime())) {
     throw new HttpError(429, 'rate_limited', 'Слишком много заявок с этого телефона. Попробуйте позже.');
   }
   const booking = {
@@ -172,11 +236,14 @@ async function createBooking(deps, event, body) {
     }
     throw err;
   }
-  // Одна быстрая попытка; если релей не ответил — заявка уходит в outbox,
-  // и таймер дошлёт её мастеру. Клиент ответа Telegram не ждёт.
-  const delivery = await outbox.sendOrQueue(deps, master.chatId, bookingMessage(booking, master), {
+  // Уведомление в Telegram — без имени и телефона клиента (они остаются
+  // только в базе в РФ и видны в панели). Одна быстрая попытка; если релей
+  // не ответил — сообщение уходит в outbox, и таймер дошлёт его мастеру.
+  if (!master.chatId) return { ok: true, bookingId: booking.id, notified: false, queued: false };
+  const panelUrl = (event.base || '') + '/admin';
+  const delivery = await outbox.sendOrQueue(deps, master.chatId, bookingMessage(booking, master, panelUrl), {
     parseMode: 'HTML',
-    replyMarkup: bookingKeyboard(booking.id)
+    replyMarkup: bookingKeyboard(booking.id, panelUrl)
   }, { bookingId: booking.id });
   if (delivery.sent && delivery.messageId) {
     try { await deps.repo.setMessageId(booking.id, delivery.messageId); } catch (e) { /* не критично */ }
@@ -186,13 +253,16 @@ async function createBooking(deps, event, body) {
 }
 
 async function openSession(deps, body) {
+  if (!telegramLoginAllowed(deps)) {
+    throw new HttpError(403, 'telegram_login_off', 'Вход через Telegram отключён. Войдите через Яндекс ID или Mail.ru.');
+  }
   const secret = requireSessionSecret(deps);
   const payload = verify(body && body.token, secret, nowOf(deps).getTime());
   if (!payload || payload.typ !== 'login' || !payload.jti) {
     throw new HttpError(401, 'unauthorized', 'Ссылка для входа недействительна.');
   }
   const row = await deps.repo.consumeLogin(payload.jti, nowOf(deps).getTime());
-  if (!row || row.slug !== payload.slug || String(row.chatId) !== String(payload.chatId)) {
+  if (!row || row.kind || row.slug !== payload.slug || String(row.chatId) !== String(payload.chatId)) {
     throw new HttpError(401, 'unauthorized', 'Ссылка для входа уже использована или истекла. Запросите новую у бота.');
   }
   const master = await deps.repo.getMasterBySlug(row.slug);
@@ -206,6 +276,7 @@ async function openSession(deps, body) {
 }
 
 async function openWidgetSession(deps, body) {
+  if (!telegramLoginAllowed(deps)) throw new HttpError(404, 'not_found', 'Неизвестный запрос.');
   const user = checkTelegramLogin(body, secretsOf(deps).botToken, nowOf(deps).getTime());
   if (!user) throw new HttpError(401, 'unauthorized', 'Не удалось проверить вход Telegram.');
   const master = await deps.repo.getMasterByChat(user.id);
@@ -219,8 +290,15 @@ async function openWidgetSession(deps, body) {
 }
 
 async function saveProfile(deps, master, body, base) {
-  const cleaned = sanitizeProfile(body || {});
+  const cleaned = sanitizeProfile(body || {}, master.profile, nowOf(deps).toISOString());
   if (!cleaned.ok) throw new HttpError(400, 'validation', cleaned.message);
+  if (!cleaned.profile.termsAt) {
+    throw new HttpError(400, 'validation', 'Примите условия использования для мастеров.');
+  }
+  const missing = operatorMissing(cleaned.profile);
+  if (missing.length) {
+    throw new HttpError(400, 'validation', 'Заполните данные оператора: ' + missing.join(', ') + '. Без них клиенты не смогут дать согласие на обработку данных.');
+  }
   const updated = await deps.repo.updateMasterProfile(
     master.slug,
     cleaned.profile,
@@ -252,18 +330,21 @@ async function changeBooking(deps, master, id, action) {
 
 function linksText(base, master, token) {
   const page = base + '/' + master.slug;
-  const login = base + '/admin?token=' + token;
   const lines = [
     'БьютиЛинк — ваша страница записи.',
     '',
     'Страница для клиентов:',
     page,
-    '',
-    'Ссылка для входа в настройки (10 минут, один раз):',
-    login
+    ''
   ];
+  if (token) {
+    lines.push('Ссылка для входа в настройки (10 минут, один раз):', base + '/admin?token=' + token);
+  } else {
+    lines.push('Настройки и заявки — на сайте, вход через Яндекс ID или Mail.ru:', base + '/admin');
+  }
   if (master.published) lines.push('', 'Страница уже открыта для записи.');
-  else lines.push('', 'Страница ещё не открыта клиентам. Войдите по ссылке, заполните услуги и сохраните профиль.');
+  else lines.push('', 'Страница ещё не открыта клиентам. Войдите, заполните услуги и сохраните профиль.');
+  lines.push('', 'Сюда приходят уведомления о заявках — без имени и телефона клиента.', 'Политика конфиденциальности: ' + base + '/privacy');
   return lines.join('\n');
 }
 
@@ -274,7 +355,7 @@ function reply(deps, chatId, text) {
 async function sendLinks(deps, event, master) {
   const base = event.base || '';
   if (!base) return;
-  const token = await issueLoginToken(deps, master);
+  const token = telegramLoginAllowed(deps) ? await issueLoginToken(deps, master) : '';
   // Ссылка для входа живёт 10 минут — досылать её позже нет смысла.
   await outbox.sendOrQueue(deps, master.chatId, linksText(base, master, token), {}, { ttlMs: 9 * 60 * 1000 });
 }
@@ -285,18 +366,28 @@ async function onTelegramMessage(deps, event, message) {
   const text = String(message.text || '').trim();
   const fromId = String(message.from && message.from.id || chatId);
   const master = await deps.repo.getMasterByChat(chatId);
+  const linkCode = /^\/start\s+link_([A-Za-z0-9_-]{8,40})$/.exec(text);
+  if (linkCode) {
+    await linkTelegramChat(deps, event, chatId, fromId, linkCode[1]);
+    return;
+  }
   if (text.startsWith('/start') || text.startsWith('/link') || text.startsWith('/help')) {
     if (master) {
       await deps.repo.setBotState(chatId, '');
       await sendLinks(deps, event, master);
       return;
     }
+    const base = event.base || '';
+    if (!telegramLoginAllowed(deps)) {
+      await reply(deps, chatId, 'Добро пожаловать в БьютиЛинк! Зарегистрируйтесь на сайте через Яндекс ID или Mail.ru: ' + base + '/admin\nПотом в настройках нажмите «Подключить Telegram» — сюда будут приходить уведомления о заявках.\nПолитика конфиденциальности: ' + base + '/privacy');
+      return;
+    }
     await deps.repo.setBotState(chatId, 'await_slug');
-    await reply(deps, chatId, 'Добро пожаловать в БьютиЛинк! Пришлите короткий адрес страницы латиницей, 3–32 символа, например anna-nails. Клиенты откроют запись по ссылке с этим адресом. Адрес потом нельзя сменить.');
+    await reply(deps, chatId, 'Добро пожаловать в БьютиЛинк! Пришлите короткий адрес страницы латиницей, 3–32 символа, например anna-nails. Клиенты откроют запись по ссылке с этим адресом. Адрес потом нельзя сменить.\nМожно и без бота: регистрация на сайте через Яндекс ID или Mail.ru — ' + base + '/admin\nПолитика конфиденциальности: ' + base + '/privacy');
     return;
   }
   const step = await deps.repo.getBotState(chatId);
-  if (step === 'await_slug') {
+  if (step === 'await_slug' && telegramLoginAllowed(deps)) {
     const check = validateSlug(text.toLowerCase());
     if (!check.ok) {
       await reply(deps, chatId, check.message);
@@ -309,6 +400,7 @@ async function onTelegramMessage(deps, event, message) {
         chatId,
         telegramUserId: fromId,
         published: false,
+        ownerId: randomId(12),
         profile: starterProfile(message.from && message.from.first_name),
         createdAt: stamp,
         updatedAt: stamp
@@ -331,6 +423,184 @@ async function onTelegramMessage(deps, event, message) {
     return;
   }
   await reply(deps, chatId, 'Это бот БьютиЛинк. Напишите /start, чтобы получить ссылку на страницу и вход в настройки.');
+}
+
+async function linkTelegramChat(deps, event, chatId, fromId, code) {
+  const row = await deps.repo.consumeLogin('tg_' + code, nowOf(deps).getTime());
+  if (!row || row.kind !== 'tglink' || !row.slug) {
+    await reply(deps, chatId, 'Ссылка для подключения устарела. Откройте настройки на сайте и нажмите «Подключить Telegram» ещё раз.');
+    return;
+  }
+  const master = await deps.repo.getMasterBySlug(row.slug);
+  if (!master || ownerKey(master) !== String(row.uid || '')) {
+    await reply(deps, chatId, 'Страница не найдена.');
+    return;
+  }
+  try {
+    await deps.repo.linkChat(master.slug, chatId);
+  } catch (err) {
+    if (err instanceof RepoError && err.code === 'chat_taken') {
+      await reply(deps, chatId, 'Этот Telegram уже подключён к другой странице БьютиЛинк.');
+      return;
+    }
+    throw err;
+  }
+  await deps.repo.setBotState(chatId, '');
+  await reply(deps, chatId, 'Готово: уведомления о заявках для страницы ' + (event.base || '') + '/' + master.slug + ' будут приходить сюда. Имя и телефон клиента в уведомлении не передаются — они в панели на сайте.');
+}
+
+async function telegramLinkUrl(deps, master) {
+  if (!deps.botUsername) throw new HttpError(503, 'not_configured', 'Бот для уведомлений не настроен.');
+  const code = randomId(12);
+  const exp = nowOf(deps).getTime() + 10 * 60 * 1000;
+  await deps.repo.putLogin('tg_' + code, { kind: 'tglink', slug: master.slug, uid: ownerKey(master), exp });
+  return { ok: true, url: 'https://t.me/' + deps.botUsername + '?start=link_' + code };
+}
+
+// ---------- Вход через Яндекс ID / Mail.ru (VK ID) ----------
+
+function redirect(location, cookies) {
+  const list = (cookies || []).filter(Boolean);
+  const res = {
+    statusCode: 302,
+    headers: { Location: location, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' },
+    body: ''
+  };
+  if (list.length) {
+    res.headers['Set-Cookie'] = list[0];
+    res.multiValueHeaders = { 'Set-Cookie': list };
+  }
+  return res;
+}
+
+async function oauthStart(deps, event, id, query) {
+  const mode = query.mode === 'link' ? 'link' : 'login';
+  let linkSlug = '';
+  if (mode === 'link') {
+    const master = await sessionFrom(event, deps);
+    if (!master) return redirect('/admin?auth_error=session');
+    linkSlug = master.slug;
+  }
+  const flow = oauth.startFlow(deps, id, event.base, mode, linkSlug);
+  return redirect(flow.location, [flow.cookie]);
+}
+
+function authFail(deps, code) {
+  return redirect('/admin?auth_error=' + encodeURIComponent(code), [oauth.flowCookie(deps, '', 0)]);
+}
+
+async function oauthCallback(deps, event, id, query) {
+  if (!oauth.providerConf(deps, id)) return authFail(deps, 'provider');
+  if (query.error) return authFail(deps, 'denied');
+  const flow = oauth.readFlow(deps, event, id, query.state);
+  if (!flow) return authFail(deps, 'state');
+  let ident;
+  try {
+    ident = await oauth.exchange(deps, id, event.base, flow, query);
+  } catch (err) {
+    console.error('oauth exchange failed', id, err && err.code ? err.code : 'error');
+    return authFail(deps, 'exchange');
+  }
+  const clearFlow = oauth.flowCookie(deps, '', 0);
+  const linkedSlug = await deps.repo.getIdentity(id, ident.sub);
+  if (flow.m === 'link') {
+    const master = await sessionFrom(event, deps);
+    if (!master || master.slug !== flow.ls) return redirect('/admin?auth_error=session', [clearFlow]);
+    if (linkedSlug && linkedSlug !== master.slug) return redirect('/' + master.slug + '?admin=1&auth_error=taken', [clearFlow]);
+    if (!(await deps.repo.putIdentity(id, ident.sub, master.slug))) {
+      return redirect('/' + master.slug + '?admin=1&auth_error=taken', [clearFlow]);
+    }
+    const stamp = nowOf(deps).toISOString();
+    await deps.repo.patchMaster(master.slug, (cur) => {
+      const ids = Object.assign({}, cur.identities || {});
+      ids[id] = { sub: ident.sub, at: stamp };
+      return { identities: ids };
+    });
+    return redirect('/' + master.slug + '?admin=1&linked=' + id, [clearFlow]);
+  }
+  if (linkedSlug) {
+    const master = await deps.repo.getMasterBySlug(linkedSlug);
+    const own = master && master.identities && master.identities[id];
+    if (master && own && String(own.sub) === ident.sub) {
+      return redirect('/' + master.slug + '?admin=1', [clearFlow, sessionCookie(deps, master)]);
+    }
+  }
+  // Новый мастер: выбор адреса страницы на сайте, без бота.
+  const token = oauth.signupToken(deps, { p: id, sub: ident.sub, name: ident.name });
+  return redirect('/admin?signup=1', [clearFlow, oauth.signupCookie(deps, token, Math.floor(oauth.SIGNUP_MS / 1000))]);
+}
+
+function signupInfo(deps, event) {
+  const data = oauth.readSignup(deps, event);
+  if (!data) throw new HttpError(401, 'unauthorized', 'Сначала войдите через Яндекс ID или Mail.ru.');
+  return { ok: true, provider: data.p, name: data.name || '' };
+}
+
+async function signup(deps, event, body) {
+  const data = oauth.readSignup(deps, event);
+  if (!data) throw new HttpError(401, 'unauthorized', 'Сначала войдите через Яндекс ID или Mail.ru.');
+  if (body.terms !== true) throw new HttpError(400, 'validation', 'Примите условия использования для мастеров.');
+  const check = validateSlug(String(body.slug || '').toLowerCase());
+  if (!check.ok) throw new HttpError(400, 'validation', check.message);
+  const name = String(body.name || data.name || 'Мастер').trim().slice(0, 60);
+  const already = await deps.repo.getIdentity(data.p, data.sub);
+  if (already) throw new HttpError(409, 'exists', 'Эта учётная запись уже привязана к странице. Войдите ещё раз.');
+  const stamp = nowOf(deps).toISOString();
+  const profile = starterProfile(name);
+  profile.termsAt = stamp;
+  const master = {
+    slug: check.slug,
+    chatId: '',
+    ownerId: randomId(12),
+    identities: { [data.p]: { sub: data.sub, at: stamp } },
+    published: false,
+    profile,
+    createdAt: stamp,
+    updatedAt: stamp
+  };
+  try {
+    await deps.repo.insertMaster(master);
+  } catch (err) {
+    if (err instanceof RepoError && err.code === 'slug_taken') {
+      throw new HttpError(409, 'slug_taken', 'Этот адрес уже занят. Выберите другой.');
+    }
+    throw err;
+  }
+  if (!(await deps.repo.putIdentity(data.p, data.sub, master.slug))) {
+    throw new HttpError(409, 'exists', 'Эта учётная запись уже привязана к странице.');
+  }
+  return {
+    body: { ok: true, slug: master.slug },
+    cookies: [sessionCookie(deps, master), oauth.signupCookie(deps, '', 0)]
+  };
+}
+
+// ---------- Сроки хранения ----------
+
+function cutoffDate(now, months) {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - months, now.getUTCDate()));
+  return d.toISOString().slice(0, 10);
+}
+
+// Раз в сутки (по первому срабатыванию таймера) удаляет заявки, дата визита
+// которых старше срока хранения (по умолчанию 12 месяцев).
+async function purgeExpired(deps) {
+  const repo = deps.repo;
+  if (!repo.claimOnce || !repo.listMasterSlugs) return { skipped: true };
+  const now = nowOf(deps);
+  const day = now.toISOString().slice(0, 10);
+  if (!(await repo.claimOnce(day))) return { skipped: true };
+  const cutoff = cutoffDate(now, retentionMonths(deps));
+  let deleted = 0;
+  for (const slug of await repo.listMasterSlugs()) {
+    const rows = await repo.listBookings(slug, Infinity);
+    for (const row of rows) {
+      if (row && row.date && row.date < cutoff) {
+        try { await repo.deleteBooking(row.id); deleted += 1; } catch (e) { /* уже удалена */ }
+      }
+    }
+  }
+  return { deleted, cutoff };
 }
 
 async function onCallback(deps, query) {
@@ -409,6 +679,18 @@ async function maybeSetWebhook(deps, base) {
 
 module.exports = {
   processOutbox: outbox.processOutbox,
+  purgeExpired,
+  cutoffDate,
+  publicConfig,
+  adminMe,
+  oauthStart,
+  oauthCallback,
+  signupInfo,
+  signup,
+  telegramLinkUrl,
+  telegramLoginAllowed,
+  ownerKey,
+  linksText,
   getPublicMaster,
   getSlots,
   createBooking,

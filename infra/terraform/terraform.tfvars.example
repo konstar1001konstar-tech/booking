@@ -4,3 +4,12 @@ lockbox_version_id = ""
 public_url         = ""
 set_webhook        = true
 domain             = ""
+
+# Вход через российских провайдеров (см. docs/oauth-setup.md)
+# allow_telegram_login            = true
+# yandex_client_id                = ""
+# yandex_client_secret_in_lockbox = false
+# vkid_client_id                  = ""
+# owner_fio                       = ""
+# owner_inn                       = ""
+# owner_email                     = ""

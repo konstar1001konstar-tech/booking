@@ -16,6 +16,8 @@
 //   data/logins/<jti>.json              одноразовый вход
 //   data/bot-state/<chat_id>.json       { step }
 //   data/outbox/<id>.json               неотправленное сообщение Telegram
+//   data/idents/<provider>/<sub>.json   { slug } — вход через Яндекс ID / VK ID
+//   data/sweeps/<YYYY-MM-DD>.json       отметка ежедневной очистки старых заявок
 
 const { RepoError } = require('../errors');
 
@@ -130,7 +132,10 @@ const K = {
   login: (jti) => 'data/logins/' + enc(jti) + '.json',
   botState: (chatId) => 'data/bot-state/' + enc(chatId) + '.json',
   outboxPrefix: () => 'data/outbox/',
-  outbox: (id) => 'data/outbox/' + enc(id) + '.json'
+  outbox: (id) => 'data/outbox/' + enc(id) + '.json',
+  ident: (provider, sub) => 'data/idents/' + enc(provider) + '/' + enc(sub) + '.json',
+  sweep: (day) => 'data/sweeps/' + enc(day) + '.json',
+  masterPrefix: () => 'data/masters/'
 };
 
 class S3Repo {
@@ -152,14 +157,72 @@ class S3Repo {
 
   async insertMaster(master) {
     if (await this.store.get(K.master(master.slug))) throw new RepoError('slug_taken');
-    if (!(await this.store.put(K.chat(master.chatId), { slug: master.slug }, 'create'))) {
+    // Мастер, зарегистрированный на сайте (Яндекс ID / Mail), может быть без Telegram.
+    const chat = master.chatId ? String(master.chatId) : '';
+    if (chat && !(await this.store.put(K.chat(chat), { slug: master.slug }, 'create'))) {
       throw new RepoError('chat_taken');
     }
     if (!(await this.store.put(K.master(master.slug), master, 'create'))) {
-      await this.store.del(K.chat(master.chatId));
+      if (chat) await this.store.del(K.chat(chat));
       throw new RepoError('slug_taken');
     }
     return clone(master);
+  }
+
+  async patchMaster(slug, fields) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const row = await this.store.get(K.master(slug));
+      if (!row) throw new RepoError('not_found');
+      const patch = typeof fields === 'function' ? fields(clone(row.value)) : fields;
+      const next = Object.assign({}, row.value, clone(patch));
+      if (await this.store.put(K.master(slug), next, row.etag || undefined)) return clone(next);
+    }
+    throw new RepoError('conflict');
+  }
+
+  async getIdentity(provider, sub) {
+    const row = await this.store.get(K.ident(provider, sub));
+    return row && row.value && row.value.slug ? String(row.value.slug) : null;
+  }
+
+  // false — эта учётная запись уже привязана к другому мастеру.
+  async putIdentity(provider, sub, slug) {
+    if (await this.store.put(K.ident(provider, sub), { slug }, 'create')) return true;
+    return (await this.getIdentity(provider, sub)) === slug;
+  }
+
+  async deleteIdentity(provider, sub) {
+    await this.store.del(K.ident(provider, sub));
+  }
+
+  // Привязка чата Telegram для уведомлений к уже существующему мастеру.
+  async linkChat(slug, chatId) {
+    const chat = String(chatId);
+    if (!(await this.store.put(K.chat(chat), { slug }, 'create'))) {
+      const link = await this.store.get(K.chat(chat));
+      if (!link || !link.value || link.value.slug !== slug) throw new RepoError('chat_taken');
+    }
+    let previous = '';
+    const updated = await this.patchMaster(slug, (cur) => {
+      previous = cur.chatId ? String(cur.chatId) : '';
+      return { chatId: chat };
+    });
+    if (previous && previous !== chat) {
+      const old = await this.store.get(K.chat(previous));
+      if (old && old.value && old.value.slug === slug) await this.store.del(K.chat(previous));
+    }
+    return updated;
+  }
+
+  async listMasterSlugs() {
+    const prefix = K.masterPrefix();
+    const keys = await this.store.list(prefix);
+    return keys.map((key) => decodeURIComponent(key.slice(prefix.length).replace(/\.json$/, '')));
+  }
+
+  // true только для первого вызова с этим ключом (дневная отметка очистки).
+  async claimOnce(day) {
+    return Boolean(await this.store.put(K.sweep(day), { at: new Date().toISOString() }, 'create'));
   }
 
   async updateMasterProfile(slug, profile, published, updatedAt) {
@@ -197,8 +260,9 @@ class S3Repo {
     return clone(booking);
   }
 
-  async listBookings(slug) {
-    const keys = (await this.store.list(K.bookingPrefix(slug))).sort().reverse().slice(0, 100);
+  async listBookings(slug, limit) {
+    const max = limit == null ? 100 : limit;
+    const keys = (await this.store.list(K.bookingPrefix(slug))).sort().reverse().slice(0, max);
     const rows = await Promise.all(keys.map((key) => this.store.get(key)));
     const out = rows.filter(Boolean).map((r) => clone(r.value));
     out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));

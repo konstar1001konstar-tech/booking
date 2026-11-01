@@ -1,5 +1,5 @@
 module.exports = {
-  content: ['./index.html', './app.js'],
+  content: ['./index.html', './app.js', './functions/src/legal-pages.js'],
   theme: {
     extend: {
       colors: {

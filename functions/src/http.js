@@ -75,20 +75,21 @@ function json(status, body, extra) {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store'
   }, extra || {});
+  const cookies = [].concat(headers['Set-Cookie'] || []).filter(Boolean);
+  if (cookies.length) headers['Set-Cookie'] = cookies[0];
+  else delete headers['Set-Cookie'];
   const response = { statusCode: status, headers, body: JSON.stringify(body) };
-  if (headers['Set-Cookie']) {
-    response.multiValueHeaders = { 'Set-Cookie': [headers['Set-Cookie']] };
-  }
+  if (cookies.length) response.multiValueHeaders = { 'Set-Cookie': cookies };
   return response;
 }
 
-function html(status, body) {
+function html(status, body, extra) {
   return {
     statusCode: status,
-    headers: {
+    headers: Object.assign({
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-cache'
-    },
+    }, extra || {}),
     body
   };
 }

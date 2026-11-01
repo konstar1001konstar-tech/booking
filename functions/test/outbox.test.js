@@ -40,7 +40,8 @@ const profile = {
   services: [{ name: 'Маникюр', price: 1500, dur: '1,5 ч' }],
   slots: ['10:00', '12:30', '15:00', '18:00'], gallery: [], tz: 'Europe/Moscow',
   workDays: [1, 2, 3, 4, 5, 6], horizon: 14, category: 'manicure', theme: 'plum',
-  legalName: 'Анна', legalStatus: 'self', inn: '', revokeContact: '@anna',
+  legalName: 'Анна Иванова', legalStatus: 'self', inn: '', revokeContact: '@anna',
+  city: 'Москва', pubConsentAt: '2026-11-01T00:00:00.000Z', termsAt: '2026-11-01T00:00:00.000Z',
   phone: '+79991234567', telegram: '@anna', whatsapp: ''
 };
 
