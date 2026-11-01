@@ -257,7 +257,7 @@ function showBroken(title, text) {
   const paragraph = $('#broken-text');
   if (heading && title) heading.textContent = title;
   if (paragraph && text) paragraph.textContent = text;
-  document.title = title || 'Ссылка повреждена';
+  document.title = (title || 'Ссылка повреждена') + ' · БьютиЛинк';
   showView('broken');
 }
 
@@ -395,7 +395,7 @@ function renderAddress() {
 function applyConfig(c) {
   config = c;
   applyTheme(c.theme);
-  document.title = c.name + ' — онлайн-запись';
+  document.title = c.name + ' — онлайн-запись · БьютиЛинк';
   $('#master-name').textContent = c.name;
   $('#master-desc').textContent = c.desc;
   const draftNote = $('#draft-note');
@@ -978,7 +978,7 @@ function fillPanel(c) {
   $('#p-cat').value = CATEGORIES.includes(c.category) ? c.category : 'other';
   $('#p-theme').value = THEMES.includes(c.theme) ? c.theme : 'plum';
   markThemeSwatch($('#p-theme').value);
-  $('#p-theme-preview-name').textContent = c.name || 'Ваша визитка';
+  $('#p-theme-preview-name').textContent = c.name || 'Ваша страница';
   ensureTzOption(c.tz);
   $('#p-tz').value = c.tz;
   $('#p-photo').value = c.photo;
@@ -1321,7 +1321,7 @@ function setupAdmin() {
     next.focus();
   });
   $('#p-name').addEventListener('input', () => {
-    $('#p-theme-preview-name').textContent = $('#p-name').value.trim() || 'Ваша визитка';
+    $('#p-theme-preview-name').textContent = $('#p-name').value.trim() || 'Ваша страница';
   });
   $('#svc-add').addEventListener('click', () => { readRows(); draft.push({ name: '', price: '', dur: '' }); renderRows(); });
   $('#svc-list').addEventListener('click', (e) => {
@@ -1472,7 +1472,7 @@ async function exchangeToken(token) {
       err.classList.remove('is-hidden');
     }
     showView('admin');
-    document.title = 'Вход для мастера';
+    document.title = 'Вход для мастера · БьютиЛинк';
     return '';
   }
   return data.slug || '';
@@ -1498,7 +1498,7 @@ async function route() {
 
   if (path === '/admin') {
     showView('admin');
-    document.title = 'Вход для мастера';
+    document.title = 'Вход для мастера · БьютиЛинк';
     if (token) {
       const slug = await exchangeToken(token);
       if (slug) location.replace('/' + slug + '?admin=1');
@@ -1525,7 +1525,7 @@ async function route() {
 
   if (path === '/') {
     showView('lock');
-    document.title = 'Онлайн-запись к мастеру';
+    document.title = 'БьютиЛинк — онлайн-запись к бьюти-мастеру';
     return;
   }
 
@@ -1547,12 +1547,12 @@ async function route() {
         source = await own.json().catch(() => ({}));
         if (!own.ok || !source.ok) {
           showView('preparing');
-          document.title = 'Страница ещё готовится';
+          document.title = 'Страница ещё готовится · БьютиЛинк';
           return;
         }
       } else if (data.error === 'not_published') {
         showView('preparing');
-        document.title = 'Страница ещё готовится';
+        document.title = 'Страница ещё готовится · БьютиЛинк';
         return;
       } else {
         showBroken('Страница не найдена', 'Такой страницы мастера нет. Проверьте ссылку или попросите отправить её ещё раз.');

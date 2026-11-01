@@ -4,24 +4,39 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5B3A5E">
-<meta name="description" content="Онлайн-запись к мастеру: услуги, портфолио и заявка на удобное время. Мастер подтверждает запись лично.">
+<meta name="description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ru_RU">
-<meta property="og:title" content="Онлайн-запись к мастеру">
-<meta property="og:description" content="Услуги, портфолио и заявка на удобное время. Мастер подтверждает запись лично.">
+<meta property="og:site_name" content="БьютиЛинк">
+<meta name="application-name" content="БьютиЛинк">
+<meta name="apple-mobile-web-app-title" content="БьютиЛинк">
+<meta property="og:title" content="БьютиЛинк — онлайн-запись к бьюти-мастеру">
+<meta property="og:description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.">
 <meta property="og:url" content="">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Онлайн-запись к мастеру">
-<meta name="twitter:description" content="Услуги, портфолио и заявка на удобное время. Мастер подтверждает запись лично.">
+<meta name="twitter:title" content="БьютиЛинк — онлайн-запись к бьюти-мастеру">
+<meta name="twitter:description" content="БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://telegram.org; style-src 'self'; img-src 'self' data: blob: https:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
-<title>Онлайн-запись к мастеру</title>
+<title>БьютиЛинк — онлайн-запись к бьюти-мастеру</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
+<link rel="preload" href="/fonts/cormorant-garamond-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/cormorant-garamond-italic-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="bg-milk text-ink antialiased">
+  <svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
+    <symbol id="bl-mark" viewBox="0 0 48 48">
+      <rect width="48" height="48" rx="14" fill="currentColor"/>
+      <g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round">
+        <path d="M21 27.5l-3.2 3.2a5.6 5.6 0 0 1-7.9-7.9l5-5a5.6 5.6 0 0 1 7.9 0"/>
+        <path d="M27 20.5l3.2-3.2a5.6 5.6 0 0 1 7.9 7.9l-5 5a5.6 5.6 0 0 1-7.9 0"/>
+      </g>
+      <path d="M24 9.5c.5 2.6 1.4 3.5 4 4-2.6.5-3.5 1.4-4 4-.5-2.6-1.4-3.5-4-4 2.6-.5 3.5-1.4 4-4z" fill="#fff"/>
+    </symbol>
+  </svg>
 
   <div id="loading-view" class="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
     <p class="text-[15px] text-muted">Открываем страницу…</p>
@@ -29,34 +44,72 @@
 
   <div id="preparing-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
     <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
-      <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Онлайн-запись</span>
-      <h1 class="display mt-4 text-[28px] leading-tight">Страница ещё готовится</h1>
+      <span class="inline-flex items-center gap-2"><svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#bl-mark"/></svg><span class="wordmark text-[26px]"><b>Бьюти</b><i>Линк</i></span></span>
+      <h1 class="display mt-5 text-[28px] leading-tight">Страница ещё готовится</h1>
       <p class="mt-3 text-[15px] leading-relaxed text-muted">Мастер ещё не открыл запись. Зайдите позже или попросите новую ссылку.</p>
     </div>
   </div>
 
   <div id="admin-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
     <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
-      <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Панель мастера</span>
-      <h1 class="display mt-4 text-[28px] leading-tight">Вход через Telegram</h1>
+      <span class="inline-flex items-center gap-2"><svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#bl-mark"/></svg><span class="wordmark text-[26px]"><b>Бьюти</b><i>Линк</i></span></span>
+      <p class="mt-4 text-xs font-semibold uppercase tracking-wider text-muted">Панель мастера</p>
+      <h1 class="display mt-1 text-[28px] leading-tight">Вход через Telegram</h1>
       <p class="mt-3 text-[15px] leading-relaxed text-muted">Откройте бота и отправьте /start. Бот пришлёт одноразовую ссылку для входа. Она действует 10 минут.</p>
       <p id="admin-error" class="is-hidden mt-4 text-sm text-red-600" role="alert"></p>
     </div>
   </div>
 
-  <div id="lock-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
-    <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
-      <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Умная визитка мастера</span>
-      <h1 class="display mt-4 text-[28px] leading-tight">Сервис персональной онлайн-записи</h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-muted">Страница открывается по короткой ссылке мастера. Клиенту её присылают лично, мастеру — ссылку для входа из Telegram-бота.</p>
-      <p class="mt-4 text-xs text-muted">Если ссылка не открывается, попросите отправить её ещё раз.</p>
+  <div id="lock-view" class="is-hidden hero-grad min-h-dvh">
+    <div class="mx-auto flex min-h-dvh max-w-md flex-col px-6 pb-[calc(28px+env(safe-area-inset-bottom))] pt-[calc(40px+env(safe-area-inset-top))]">
+      <div class="rise flex justify-center"><span class="inline-flex items-center gap-2 gap-3"><svg class="brand-mark" width="44" height="44" aria-hidden="true"><use href="#bl-mark"/></svg><span class="wordmark text-[40px]"><b>Бьюти</b><i>Линк</i></span></span></div>
+      <h1 class="brand rise rise-1 mt-9 text-center text-[36px] font-semibold leading-[1.08] text-ink">Красивая страница записи для <span class="whitespace-nowrap">бьюти-мастера</span></h1>
+      <p class="rise rise-1 mt-4 text-center text-[16px] leading-relaxed text-muted">Услуги, цены, портфолио и свободные окошки — по одной короткой ссылке. Клиент оставляет заявку, вы подтверждаете её в Telegram.</p>
+
+      <div class="rise rise-2 mt-8 overflow-hidden rounded-[28px] bg-surface shadow-sm ring-1 ring-line" aria-hidden="true">
+        <div class="hero-grad px-5 pb-4 pt-5">
+          <div class="flex items-center gap-3">
+            <span class="h-12 w-12 shrink-0 rounded-full bg-hero ring-2 ring-surface"></span>
+            <div class="min-w-0 text-left">
+              <p class="display truncate text-[19px] text-ink">Мария | маникюр</p>
+              <p class="text-xs text-muted">Маникюр и педикюр · запись онлайн</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-5 py-4">
+          <div class="flex items-center justify-between gap-2 text-left">
+            <div>
+              <p class="text-[15px] font-medium text-ink">Маникюр с покрытием</p>
+              <p class="text-xs text-muted">2 200 ₽ · 1 ч 30 мин</p>
+            </div>
+            <span class="rounded-full bg-tg px-3.5 py-2 text-xs font-semibold text-ontg">Записаться</span>
+          </div>
+          <div class="mt-3 flex gap-1.5 text-xs font-medium">
+            <span class="rounded-lg bg-ios px-2.5 py-1.5 text-ink">10:00</span>
+            <span class="rounded-lg bg-tg px-2.5 py-1.5 text-ontg">12:00</span>
+            <span class="rounded-lg bg-ios px-2.5 py-1.5 text-ink">16:30</span>
+          </div>
+        </div>
+      </div>
+
+      <ul class="rise rise-3 mt-8 space-y-3 text-left text-[15px] leading-snug">
+        <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Одна ссылка</b> <span class="text-muted">— для Instagram, ВКонтакте и мессенджеров.</span></span></li>
+        <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Заявки в Telegram</b> <span class="text-muted">— подтверждайте или отменяйте в один тап.</span></span></li>
+        <li class="flex gap-3"><span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ios text-tg" aria-hidden="true">✦</span><span><b class="font-semibold text-ink">Ваш стиль</b> <span class="text-muted">— фото из галереи и цвет страницы под ваш бренд.</span></span></li>
+      </ul>
+
+      <div class="mt-auto pt-10 text-center">
+        <p class="text-[13px] leading-relaxed text-muted">Мастерам: откройте нашего Telegram-бота и отправьте /start — он создаст страницу и пришлёт ссылку для входа.</p>
+        <p class="mt-2 text-xs text-muted">Клиентам: страница мастера открывается по его личной ссылке. Если она не открывается, попросите прислать её ещё раз.</p>
+        <p class="mt-6 text-xs text-muted">© БьютиЛинк</p>
+      </div>
     </div>
   </div>
 
   <div id="broken-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
     <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
-      <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Онлайн-запись</span>
-      <h1 class="display mt-4 text-[28px] leading-tight">Ссылка повреждена</h1>
+      <span class="inline-flex items-center gap-2"><svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#bl-mark"/></svg><span class="wordmark text-[26px]"><b>Бьюти</b><i>Линк</i></span></span>
+      <h1 class="display mt-5 text-[28px] leading-tight">Ссылка повреждена</h1>
       <p id="broken-text" class="mt-3 text-[15px] leading-relaxed text-muted">Не удалось прочитать настройки мастера. Попросите прислать актуальную ссылку на запись.</p>
     </div>
   </div>
@@ -107,6 +160,13 @@
             class="is-hidden mx-auto mt-10 block rounded-full bg-surface px-5 py-2.5 text-sm font-medium text-tg shadow-sm ring-1 ring-ios">
       Настроить профиль (режим мастера)
     </button>
+    <footer class="mt-12 px-6 text-center">
+      <a href="/" class="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs text-muted">
+        <span>Сделано на</span>
+        <svg class="brand-mark" width="16" height="16" aria-hidden="true"><use href="#bl-mark"/></svg>
+        <span class="wordmark text-[17px]"><b>Бьюти</b><i>Линк</i></span>
+      </a>
+    </footer>
   </main>
 
   <div id="lb" class="fixed inset-0 z-[70] flex flex-col bg-black/95 select-none" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="lb-title" inert>
@@ -236,7 +296,8 @@
         <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-line"></div>
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 id="panel-title" class="text-xl font-semibold">Конструктор визитки</h2>
+            <span class="inline-flex items-center gap-2"><svg class="brand-mark" width="20" height="20" aria-hidden="true"><use href="#bl-mark"/></svg><span class="wordmark text-[20px]"><b>Бьюти</b><i>Линк</i></span></span>
+            <h2 id="panel-title" class="mt-2 text-xl font-semibold">Настройки страницы</h2>
             <p class="mt-0.5 text-sm text-muted">Профиль хранится на сервере. Ссылка для клиентов короткая.</p>
             <button id="p-logout" type="button" class="mt-2 text-sm font-medium text-tg">Выйти</button>
           </div>
@@ -309,7 +370,7 @@
               <div class="flex items-center gap-3">
                 <span class="h-10 w-10 shrink-0 rounded-full bg-hero ring-2 ring-surface"></span>
                 <div class="min-w-0">
-                  <p id="p-theme-preview-name" class="display truncate text-[17px] text-ink">Ваша визитка</p>
+                  <p id="p-theme-preview-name" class="display truncate text-[17px] text-ink">Ваша страница</p>
                   <p class="text-xs text-muted">Так страницу увидят клиенты</p>
                 </div>
               </div>

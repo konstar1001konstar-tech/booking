@@ -512,7 +512,7 @@ test('HTML страницы подставляет OG по короткой сс
   await seed(repo, { profile: { name: 'Анна & Ко', photo: 'https://cdn.example/a.jpg', desc: 'Тихо <и> спокойно' } });
   const res = await handler({ httpMethod: 'GET', path: '/anna-nails', headers: { Host: 'card.test' } });
   assert.equal(res.statusCode, 200);
-  assert.match(res.body, /<title>Анна &amp; Ко — онлайн-запись<\/title>/);
+  assert.match(res.body, /<title>Анна &amp; Ко — онлайн-запись · БьютиЛинк<\/title>/);
   assert.match(res.body, /property="og:description" content="Тихо &lt;и&gt; спокойно"/);
   assert.match(res.body, /property="og:image" content="https:\/\/cdn.example\/a.jpg"/);
   assert.match(res.body, /property="og:url" content="https:\/\/card.test\/anna-nails"/);

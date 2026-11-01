@@ -20,7 +20,7 @@ function loadTemplate() {
       return cached;
     }
   }
-  cached = '<!doctype html><html lang="ru"><head><title>Онлайн-запись к мастеру</title></head><body><p>Шаблон страницы не найден.</p></body></html>';
+  cached = '<!doctype html><html lang="ru"><head><title>БьютиЛинк</title></head><body><p>Шаблон страницы не найден.</p></body></html>';
   return cached;
 }
 

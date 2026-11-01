@@ -92,6 +92,22 @@ paths:
         bucket: ${bucket}
         object: robots.txt
         service_account_id: ${gateway_sa_id}
+  /fonts/cormorant-garamond-600.woff2:
+    get:
+      summary: Шрифт логотипа БьютиЛинк (Cormorant Garamond, SIL OFL)
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: fonts/cormorant-garamond-600.woff2
+        service_account_id: ${gateway_sa_id}
+  /fonts/cormorant-garamond-italic-400.woff2:
+    get:
+      summary: Шрифт логотипа БьютиЛинк (Cormorant Garamond, SIL OFL)
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: fonts/cormorant-garamond-italic-400.woff2
+        service_account_id: ${gateway_sa_id}
   /media/{owner}/{file}:
     get:
       summary: Фото мастеров, загруженные из панели (только media/<slug>/<файл>)
