@@ -1,3 +1,20 @@
+/* Шрифт логотипа БьютиЛинк: Cormorant Garamond (SIL OFL 1.1, fonts/OFL.txt).
+   Файлы лежат у нас (/fonts/...), урезаны до латиницы и кириллицы, ~18 КБ. */
+@font-face {
+  font-family: "Cormorant BL";
+  src: url("/fonts/cormorant-garamond-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Cormorant BL";
+  src: url("/fonts/cormorant-garamond-italic-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -136,6 +153,15 @@ html.theme-anim body, html.theme-anim body * {
 ::selection { background: rgb(var(--c-tg) / 0.22); }
 :focus-visible { outline: 2px solid rgb(var(--c-tg) / 0.55); outline-offset: 2px; }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
+
+/* Логотип: «Бьюти» — плотная антиква цвета текста, «Линк» — курсив цвета
+   темы. На странице мастера и в настройках следует его теме, на главной —
+   фирменной «Сливе». */
+.brand { font-family: "Cormorant BL", "Cormorant Garamond", ui-serif, Georgia, serif; }
+.wordmark { font-family: "Cormorant BL", "Cormorant Garamond", ui-serif, Georgia, serif; line-height: 1; white-space: nowrap; letter-spacing: 0.005em; }
+.wordmark b { font-weight: 600; color: rgb(var(--c-ink)); }
+.wordmark i { font-weight: 400; font-style: italic; color: rgb(var(--c-tg)); margin-left: 0.015em; }
+.brand-mark { flex: none; color: rgb(var(--c-tg)); }
 
 .is-hidden { display: none !important; }
 body.scroll-lock { overflow: hidden; }

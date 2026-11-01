@@ -23,7 +23,9 @@ const FILES = {
   '/favicon.ico': ['favicon.ico', 'image/x-icon'],
   '/apple-touch-icon.png': ['apple-touch-icon.png', 'image/png'],
   '/site.webmanifest': ['site.webmanifest', 'application/manifest+json'],
-  '/robots.txt': ['robots.txt', 'text/plain; charset=utf-8']
+  '/robots.txt': ['robots.txt', 'text/plain; charset=utf-8'],
+  '/fonts/cormorant-garamond-600.woff2': ['fonts/cormorant-garamond-600.woff2', 'font/woff2'],
+  '/fonts/cormorant-garamond-italic-400.woff2': ['fonts/cormorant-garamond-italic-400.woff2', 'font/woff2']
 };
 
 function readBody(req) {

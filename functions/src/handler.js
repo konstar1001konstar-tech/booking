@@ -14,7 +14,7 @@ const BOOKING_ACTION = /^\/api\/admin\/bookings\/([A-Za-z0-9_-]{8,32})\/(confirm
 function pageMeta(path, master, base) {
   if (path === '/admin') {
     return {
-      title: 'Вход для мастера',
+      title: 'Вход для мастера · БьютиЛинк',
       description: 'Вход в настройки страницы записи через Telegram.',
       url: base + '/admin',
       robots: 'noindex'
@@ -24,7 +24,7 @@ function pageMeta(path, master, base) {
     const name = master.profile.name;
     const description = master.profile.desc || 'Услуги, портфолио и заявка на удобное время.';
     return {
-      title: name + ' — онлайн-запись',
+      title: name + ' — онлайн-запись · БьютиЛинк',
       description,
       url: base + '/' + master.slug,
       image: master.profile.photo || '',
@@ -33,14 +33,14 @@ function pageMeta(path, master, base) {
   }
   if (path !== '/' && path !== '/admin') {
     return {
-      title: 'Страница не найдена',
+      title: 'Страница не найдена · БьютиЛинк',
       description: 'Ссылка на онлайн-запись не открывается.',
       url: base + path
     };
   }
   return {
-    title: 'Онлайн-запись к мастеру',
-    description: 'Онлайн-запись к мастеру: услуги, портфолио и заявка на удобное время. Мастер подтверждает запись лично.',
+    title: 'БьютиЛинк — онлайн-запись к бьюти-мастеру',
+    description: 'БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.',
     url: base || ''
   };
 }

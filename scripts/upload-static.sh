@@ -19,11 +19,12 @@ endpoint="https://storage.yandexcloud.net"
 upload() {
   file=$1
   type=$2
-  name=$(basename "$file")
+  name=${3:-$(basename "$file")}
+  cache=${4:-public, max-age=300}
   if command -v aws >/dev/null 2>&1; then
-    aws --endpoint-url "$endpoint" s3 cp "$file" "s3://$BUCKET/$name" --content-type "$type" --cache-control "public, max-age=300"
+    aws --endpoint-url "$endpoint" s3 cp "$file" "s3://$BUCKET/$name" --content-type "$type" --cache-control "$cache"
   else
-    yc storage s3api put-object --bucket "$BUCKET" --key "$name" --body "$file" --content-type "$type" --cache-control "public, max-age=300"
+    yc storage s3api put-object --bucket "$BUCKET" --key "$name" --body "$file" --content-type "$type" --cache-control "$cache"
   fi
 }
 
@@ -35,4 +36,8 @@ upload "$root/favicon.ico" "image/x-icon"
 upload "$root/apple-touch-icon.png" "image/png"
 upload "$root/site.webmanifest" "application/manifest+json"
 upload "$root/robots.txt" "text/plain; charset=utf-8"
+# Шрифт логотипа меняется редко: кэш на месяц.
+for font in "$root"/fonts/*.woff2; do
+  upload "$font" "font/woff2" "fonts/$(basename "$font")" "public, max-age=2592000"
+done
 echo "Статика загружена в $BUCKET"

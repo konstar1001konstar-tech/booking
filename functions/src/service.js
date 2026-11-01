@@ -254,6 +254,8 @@ function linksText(base, master, token) {
   const page = base + '/' + master.slug;
   const login = base + '/admin?token=' + token;
   const lines = [
+    'БьютиЛинк — ваша страница записи.',
+    '',
     'Страница для клиентов:',
     page,
     '',
@@ -290,7 +292,7 @@ async function onTelegramMessage(deps, event, message) {
       return;
     }
     await deps.repo.setBotState(chatId, 'await_slug');
-    await reply(deps, chatId, 'Пришлите короткий адрес страницы латиницей, 3–32 символа, например anna-nails. Клиенты откроют запись по ссылке с этим адресом. Адрес потом нельзя сменить.');
+    await reply(deps, chatId, 'Добро пожаловать в БьютиЛинк! Пришлите короткий адрес страницы латиницей, 3–32 символа, например anna-nails. Клиенты откроют запись по ссылке с этим адресом. Адрес потом нельзя сменить.');
     return;
   }
   const step = await deps.repo.getBotState(chatId);
@@ -328,7 +330,7 @@ async function onTelegramMessage(deps, event, message) {
     await sendLinks(deps, event, created);
     return;
   }
-  await reply(deps, chatId, 'Напишите /start, чтобы получить ссылку на страницу и вход в настройки.');
+  await reply(deps, chatId, 'Это бот БьютиЛинк. Напишите /start, чтобы получить ссылку на страницу и вход в настройки.');
 }
 
 async function onCallback(deps, query) {

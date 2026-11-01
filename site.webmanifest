@@ -1,10 +1,10 @@
 {
-  "name": "Онлайн-запись к мастеру",
-  "short_name": "Запись",
+  "name": "БьютиЛинк — онлайн-запись к бьюти-мастеру",
+  "short_name": "БьютиЛинк",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fbf8f5",
-  "theme_color": "#fbf8f5",
+  "theme_color": "#5b3a5e",
   "lang": "ru",
   "icons": [
     {
