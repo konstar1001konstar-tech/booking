@@ -15,6 +15,7 @@
 //   data/rates/<bucket>/<window>.json   число
 //   data/logins/<jti>.json              одноразовый вход
 //   data/bot-state/<chat_id>.json       { step }
+//   data/outbox/<id>.json               неотправленное сообщение Telegram
 
 const { RepoError } = require('../errors');
 
@@ -83,7 +84,7 @@ class S3Store {
     const res = await this._req('PUT', key, { headers, body: JSON.stringify(value) });
     if (res.status === 412 || res.status === 409) return false;
     if (!res.ok) throw new Error('s3 put ' + res.status);
-    return true;
+    return res.headers.get('etag') || true;
   }
 
   async del(key) {
@@ -119,7 +120,9 @@ const K = {
   hold: (slug, slotKey) => 'data/holds/' + enc(slug) + '/' + enc(slotKey) + '.json',
   rate: (bucket, windowStart) => 'data/rates/' + enc(bucket) + '/' + enc(windowStart) + '.json',
   login: (jti) => 'data/logins/' + enc(jti) + '.json',
-  botState: (chatId) => 'data/bot-state/' + enc(chatId) + '.json'
+  botState: (chatId) => 'data/bot-state/' + enc(chatId) + '.json',
+  outboxPrefix: () => 'data/outbox/',
+  outbox: (id) => 'data/outbox/' + enc(id) + '.json'
 };
 
 class S3Repo {
@@ -279,5 +282,38 @@ class S3Repo {
     else await this.store.put(K.botState(chatId), { step });
   }
 }
+
+Object.assign(S3Repo.prototype, {
+  async putOutbox(item) {
+    await this.store.put(K.outbox(item.id), item);
+  },
+
+  async listOutbox() {
+    const prefix = K.outboxPrefix();
+    const keys = await this.store.list(prefix);
+    return keys.map((key) => decodeURIComponent(key.slice(prefix.length).replace(/\.json$/, '')));
+  },
+
+  async getOutbox(id) {
+    const row = await this.store.get(K.outbox(id));
+    return row ? { value: clone(row.value), etag: row.etag } : null;
+  },
+
+  // Условная запись по ETag. Возвращает новый ETag или null, если запись
+  // успел изменить кто-то другой (или её удалили).
+  async claimOutbox(id, value, etag) {
+    const key = K.outbox(id);
+    if (!etag) return null;
+    const res = await this.store.put(key, value, etag);
+    if (!res) return null;
+    if (typeof res === 'string') return res;
+    const row = await this.store.get(key);
+    return row ? row.etag || null : null;
+  },
+
+  async deleteOutbox(id) {
+    await this.store.del(K.outbox(id));
+  }
+});
 
 module.exports = { S3Repo, S3Store, keys: K };

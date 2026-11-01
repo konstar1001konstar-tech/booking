@@ -54,3 +54,9 @@ variable "relay_url" {
   default     = ""
   description = "Релей Telegram Bot API, например https://booking-dun-beta.vercel.app/api/tg. Пусто — функция ходит в api.telegram.org напрямую. Если задан, в Lockbox нужен ключ relay_key."
 }
+
+variable "relay_ips" {
+  type        = string
+  default     = "76.76.21.21"
+  description = "IPv4 релея через запятую, к которым функция подключается напрямую (имя хоста остаётся для TLS). Из Yandex Cloud новые адреса Vercel 216.198.79.x и 64.29.17.x часто не отвечают, а 76.76.21.21 работает. Пусто — обычный DNS."
+}

@@ -5,6 +5,7 @@ const { validateSlug } = require('./lib/profile');
 const http = require('./http');
 const { loadTemplate, renderDocument } = require('./render');
 const service = require('./service');
+const { isTimerEvent } = require('./outbox');
 
 const SLUG_PATH = /^\/([a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9]))$/;
 const BOOKING_ACTION = /^\/api\/admin\/bookings\/([A-Za-z0-9_-]{8,32})\/(confirm|cancel|delete)$/;
@@ -128,6 +129,16 @@ async function route(event, deps) {
 
 function createHandler(deps) {
   return async function handler(event) {
+    if (isTimerEvent(event)) {
+      // Таймер раз в минуту: досылаем сообщения из outbox.
+      try {
+        const stats = await service.processOutbox(deps);
+        return { statusCode: 200, body: JSON.stringify({ ok: true, outbox: stats }) };
+      } catch (err) {
+        console.error('outbox run failed');
+        return { statusCode: 500, body: JSON.stringify({ ok: false }) };
+      }
+    }
     try {
       return await route(event || {}, deps);
     } catch (err) {

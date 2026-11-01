@@ -8,6 +8,7 @@ const { bookingMessage, bookingKeyboard } = require('./lib/html');
 const { sign, verify, randomId, cookie, readCookie, safeEqual, SESSION_MS, LOGIN_MS } = require('./lib/session');
 const { checkTelegramLogin } = require('./lib/telegram-auth');
 const { headerMap } = require('./http');
+const outbox = require('./outbox');
 
 function secretsOf(deps) {
   return deps.secrets || { botToken: '', sessionSecret: '', webhookSecret: '' };
@@ -170,19 +171,17 @@ async function createBooking(deps, event, body) {
     }
     throw err;
   }
-  let notified = false;
-  try {
-    const sent = await deps.telegram.sendMessage(master.chatId, bookingMessage(booking, master), {
-      parseMode: 'HTML',
-      replyMarkup: bookingKeyboard(booking.id)
-    });
-    const messageId = sent && sent.result && sent.result.message_id;
-    if (messageId) await deps.repo.setMessageId(booking.id, messageId);
-    notified = true;
-  } catch (err) {
-    notified = false;
+  // Одна быстрая попытка; если релей не ответил — заявка уходит в outbox,
+  // и таймер дошлёт её мастеру. Клиент ответа Telegram не ждёт.
+  const delivery = await outbox.sendOrQueue(deps, master.chatId, bookingMessage(booking, master), {
+    parseMode: 'HTML',
+    replyMarkup: bookingKeyboard(booking.id)
+  }, { bookingId: booking.id });
+  if (delivery.sent && delivery.messageId) {
+    try { await deps.repo.setMessageId(booking.id, delivery.messageId); } catch (e) { /* не критично */ }
   }
-  return { ok: true, bookingId: booking.id, notified };
+  const notified = delivery.sent;
+  return { ok: true, bookingId: booking.id, notified, queued: Boolean(delivery.queued) };
 }
 
 async function openSession(deps, body) {
@@ -264,11 +263,16 @@ function linksText(base, master, token) {
   return lines.join('\n');
 }
 
+function reply(deps, chatId, text) {
+  return outbox.sendOrQueue(deps, chatId, text, {}, { ttlMs: 15 * 60 * 1000 });
+}
+
 async function sendLinks(deps, event, master) {
   const base = event.base || '';
   if (!base) return;
   const token = await issueLoginToken(deps, master);
-  await deps.telegram.sendMessage(master.chatId, linksText(base, master, token));
+  // Ссылка для входа живёт 10 минут — досылать её позже нет смысла.
+  await outbox.sendOrQueue(deps, master.chatId, linksText(base, master, token), {}, { ttlMs: 9 * 60 * 1000 });
 }
 
 async function onTelegramMessage(deps, event, message) {
@@ -284,14 +288,14 @@ async function onTelegramMessage(deps, event, message) {
       return;
     }
     await deps.repo.setBotState(chatId, 'await_slug');
-    await deps.telegram.sendMessage(chatId, 'Пришлите короткий адрес страницы латиницей, 3–32 символа, например anna-nails. Клиенты откроют запись по ссылке с этим адресом. Адрес потом нельзя сменить.');
+    await reply(deps, chatId, 'Пришлите короткий адрес страницы латиницей, 3–32 символа, например anna-nails. Клиенты откроют запись по ссылке с этим адресом. Адрес потом нельзя сменить.');
     return;
   }
   const step = await deps.repo.getBotState(chatId);
   if (step === 'await_slug') {
     const check = validateSlug(text.toLowerCase());
     if (!check.ok) {
-      await deps.telegram.sendMessage(chatId, check.message);
+      await reply(deps, chatId, check.message);
       return;
     }
     const stamp = nowOf(deps).toISOString();
@@ -307,7 +311,7 @@ async function onTelegramMessage(deps, event, message) {
       });
     } catch (err) {
       if (err instanceof RepoError && err.code === 'slug_taken') {
-        await deps.telegram.sendMessage(chatId, 'Этот адрес уже занят. Пришлите другой.');
+        await reply(deps, chatId, 'Этот адрес уже занят. Пришлите другой.');
         return;
       }
       if (err instanceof RepoError && err.code === 'chat_taken') {
@@ -322,7 +326,7 @@ async function onTelegramMessage(deps, event, message) {
     await sendLinks(deps, event, created);
     return;
   }
-  await deps.telegram.sendMessage(chatId, 'Напишите /start, чтобы получить ссылку на страницу и вход в настройки.');
+  await reply(deps, chatId, 'Напишите /start, чтобы получить ссылку на страницу и вход в настройки.');
 }
 
 async function onCallback(deps, query) {
@@ -393,6 +397,7 @@ async function maybeSetWebhook(deps, base) {
 }
 
 module.exports = {
+  processOutbox: outbox.processOutbox,
   getPublicMaster,
   getSlots,
   createBooking,

@@ -37,7 +37,8 @@ function buildHandler() {
     repo: buildRepo(),
     telegram: createTelegram(() => secrets.botToken, {
       relayUrl: process.env.RELAY_URL || '',
-      relayKey: process.env.RELAY_KEY || ''
+      relayKey: process.env.RELAY_KEY || '',
+      relayIps: process.env.RELAY_IPS || ''
     }),
     secrets,
     publicUrl: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
@@ -49,6 +50,9 @@ function buildHandler() {
 module.exports.handler = async function handler(event) {
   // Note: the cache must not be named `handler` - the named function expression
   // would shadow it and recurse forever.
+  if (event && event.diag === 'relay' && !event.httpMethod && !event.requestContext) {
+    return require('./src/diag').relayDiag(process.env.RELAY_URL || 'https://booking-dun-beta.vercel.app/api/tg', event);
+  }
   if (!appHandler) appHandler = buildHandler();
   return appHandler(event);
 };
