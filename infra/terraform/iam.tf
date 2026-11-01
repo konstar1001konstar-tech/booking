@@ -51,3 +51,10 @@ resource "yandex_function_iam_binding" "gateway_invoke" {
   role        = "serverless.functions.invoker"
   members     = ["serviceAccount:${yandex_iam_service_account.gateway.id}"]
 }
+
+# Data lives in the same private bucket under data/ (STORAGE=s3).
+resource "yandex_storage_bucket_iam_binding" "functions_data" {
+  bucket  = yandex_storage_bucket.site.bucket
+  role    = "storage.editor"
+  members = ["serviceAccount:${yandex_iam_service_account.functions.id}"]
+}

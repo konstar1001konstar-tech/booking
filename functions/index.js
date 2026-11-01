@@ -1,10 +1,31 @@
 'use strict';
 
 const { createHandler } = require('./src/handler');
-const { YdbRepo } = require('./src/repo/ydb');
 const { createTelegram } = require('./src/telegram');
 
-let handler;
+let appHandler;
+
+function buildRepo() {
+  // STORAGE=s3 (по умолчанию) — Object Storage; STORAGE=ydb — прежний YDB-репозиторий.
+  const kind = (process.env.STORAGE || 's3').toLowerCase();
+  if (kind === 'ydb') {
+    const { YdbRepo } = require('./src/repo/ydb');
+    return new YdbRepo();
+  }
+  const { S3Repo } = require('./src/repo/s3');
+  const { MetadataTokenService } = require('./src/repo/metadata-token');
+  const tokens = new MetadataTokenService();
+  return new S3Repo({
+    bucket: process.env.S3_BUCKET,
+    endpoint: process.env.S3_ENDPOINT || undefined,
+    getToken: async () => {
+      const cached = tokens.getToken();
+      if (cached) return cached;
+      await tokens.initialize();
+      return tokens.getToken();
+    }
+  });
+}
 
 function buildHandler() {
   const secrets = {
@@ -13,8 +34,11 @@ function buildHandler() {
     webhookSecret: process.env.WEBHOOK_SECRET || ''
   };
   return createHandler({
-    repo: new YdbRepo(),
-    telegram: createTelegram(() => secrets.botToken),
+    repo: buildRepo(),
+    telegram: createTelegram(() => secrets.botToken, {
+      relayUrl: process.env.RELAY_URL || '',
+      relayKey: process.env.RELAY_KEY || ''
+    }),
     secrets,
     publicUrl: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
     secureCookie: process.env.COOKIE_SECURE !== '0',
@@ -23,6 +47,8 @@ function buildHandler() {
 }
 
 module.exports.handler = async function handler(event) {
-  if (!handler) handler = buildHandler();
-  return handler(event);
+  // Note: the cache must not be named `handler` - the named function expression
+  // would shadow it and recurse forever.
+  if (!appHandler) appHandler = buildHandler();
+  return appHandler(event);
 };

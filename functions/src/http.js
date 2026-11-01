@@ -16,7 +16,10 @@ function requestMethod(event) {
 }
 
 function requestPath(event) {
-  const raw = (event && (event.rawPath || event.path || event.url))
+  // Yandex API Gateway puts the route template (e.g. "/api/{proxy+}") into
+  // event.path and the real request path into event.url.
+  const templated = event && typeof event.path === 'string' && event.path.includes('{');
+  const raw = (event && (event.rawPath || (templated && event.url) || event.path || event.url))
     || (event && event.requestContext && event.requestContext.http && event.requestContext.http.path)
     || '/';
   const path = String(raw).split('?')[0];

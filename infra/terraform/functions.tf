@@ -21,20 +21,30 @@ resource "yandex_function" "api" {
     zip_filename = "${path.module}/../../functions/dist/function.zip"
   }
 
-  environment = {
-    YDB_ENDPOINT  = yandex_ydb_database_serverless.db.ydb_full_endpoint
-    YDB_DATABASE  = yandex_ydb_database_serverless.db.database_path
-    PUBLIC_URL    = var.public_url
-    COOKIE_SECURE = "1"
-    SET_WEBHOOK   = var.set_webhook ? "1" : "0"
-  }
+  # Yandex Cloud rejects empty environment values, so unset ones are dropped.
+  environment = { for k, v in merge(
+    {
+      STORAGE       = var.storage
+      S3_BUCKET     = var.storage == "s3" ? yandex_storage_bucket.site.bucket : ""
+      PUBLIC_URL    = var.public_url
+      RELAY_URL     = var.relay_url
+      COOKIE_SECURE = "1"
+      SET_WEBHOOK   = var.set_webhook ? "1" : "0"
+    },
+    var.storage == "ydb" ? {
+      # Host:port only. ydb-sdk also reads YDB_ENDPOINT itself for every
+      # connection, so a "?database=..." suffix here breaks gRPC dialing.
+      YDB_ENDPOINT = "grpcs://${yandex_ydb_database_serverless.db.ydb_api_endpoint}"
+      YDB_DATABASE = yandex_ydb_database_serverless.db.database_path
+    } : {}
+  ) : k => v if v != "" }
 
   dynamic "secrets" {
-    for_each = {
+    for_each = merge({
       bot_token      = "BOT_TOKEN"
       session_secret = "SESSION_SECRET"
       webhook_secret = "WEBHOOK_SECRET"
-    }
+    }, var.relay_url != "" ? { relay_key = "RELAY_KEY" } : {})
     content {
       id                   = yandex_lockbox_secret.app.id
       version_id           = var.lockbox_version_id

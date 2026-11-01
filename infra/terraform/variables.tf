@@ -37,3 +37,20 @@ variable "domain" {
   default     = ""
   description = "Свой домен, например zapis.example.ru. Пусто — сайт открывается на адресе API Gateway."
 }
+
+variable "storage" {
+  type        = string
+  default     = "s3"
+  description = "Где хранить данные: s3 — JSON-объекты в бакете (префикс data/), ydb — таблицы YDB."
+
+  validation {
+    condition     = contains(["s3", "ydb"], var.storage)
+    error_message = "storage: s3 или ydb."
+  }
+}
+
+variable "relay_url" {
+  type        = string
+  default     = ""
+  description = "Релей Telegram Bot API, например https://booking-dun-beta.vercel.app/api/tg. Пусто — функция ходит в api.telegram.org напрямую. Если задан, в Lockbox нужен ключ relay_key."
+}

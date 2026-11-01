@@ -25,15 +25,27 @@ function ydbEndpoint() {
   return { endpoint, database };
 }
 
+// ydb-sdk's default metadata credentials need the optional peer package
+// @yandex-cloud/nodejs-sdk, which is not installed. In Cloud Functions use a
+// small metadata token service instead, unless explicit YDB_* credentials are set.
+function credentials(getCredentialsFromEnv, MetadataAuthService) {
+  const explicit = ['YDB_ANONYMOUS_CREDENTIALS', 'YDB_ACCESS_TOKEN_CREDENTIALS',
+    'YDB_SERVICE_ACCOUNT_KEY_FILE_CREDENTIALS', 'YDB_STATIC_CREDENTIALS_USER']
+    .some((k) => process.env[k]);
+  if (explicit) return getCredentialsFromEnv();
+  const { MetadataTokenService } = require('./metadata-token');
+  return new MetadataAuthService(new MetadataTokenService());
+}
+
 function getDriver() {
   if (!driverPromise) {
     driverPromise = (async () => {
-      const { Driver, getCredentialsFromEnv } = loadSdk();
+      const { Driver, getCredentialsFromEnv, MetadataAuthService } = loadSdk();
       const { endpoint, database } = ydbEndpoint();
       const driver = new Driver({
         endpoint,
         database,
-        authService: getCredentialsFromEnv()
+        authService: credentials(getCredentialsFromEnv, MetadataAuthService)
       });
       if (!(await driver.ready(10000))) throw new Error('YDB driver is not ready');
       return driver;
