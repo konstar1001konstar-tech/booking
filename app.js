@@ -693,8 +693,12 @@ function phoneOk(value) {
   return true;
 }
 
+function bookingOpen() {
+  return !config || config.bookingOpen !== false;
+}
+
 function syncConsent() {
-  confirmBtn.disabled = sending || !consentEl.checked;
+  confirmBtn.disabled = sending || !consentEl.checked || !bookingOpen();
   if (consentEl.checked) $('#consent-err').classList.add('is-hidden');
 }
 
@@ -718,6 +722,11 @@ function openModal(service, trigger) {
   setSheet(modal, true);
   sheet.focus({ preventScroll: true });
   refreshBusy();
+  // Мастер не заполнил данные оператора — сервер заявку не примет, поэтому
+  // сразу показываем контакты и не просим клиента вводить имя и телефон.
+  const open = bookingOpen();
+  [nameEl, phoneEl, consentEl].forEach((el) => { el.disabled = !open; });
+  if (!open) showFallback('operator_missing');
 }
 
 function closeModal() {
