@@ -1,20 +1,11 @@
-// Токен Telegram-бота нельзя хранить в коде страницы: его видит любой, кто откроет исходник.
-// После переезда на хостинг (Object Storage + Cloud Functions) заявка должна уходить на SEND_ENDPOINT,
-// а BOT_TOKEN — только в секрете функции. Пока оба значения пустые, форма не вызывает API и предлагает
-// написать мастеру напрямую. Если SEND_ENDPOINT будет на другом домене, его нужно добавить в connect-src
-// у мета-тега Content-Security-Policy.
-const BOT_TOKEN = '';
-const SEND_ENDPOINT = '';
-
-// Клиентский ключ панели. На сервере его заменит нормальная авторизация; в клиентской ссылке ключа нет.
-const ADMIN_KEY = 'beauty2026';
-const STORE_KEY = 'masterConfig:v2';
+// Заявка уходит на /api/bookings этого же сайта. Токен бота и chat_id мастера в страницу не входят:
+// сервер берёт chat_id из базы по короткой ссылке, а не из браузера.
+const SEND_ENDPOINT = '/api/bookings';
 const DEFAULT_TZ = 'Europe/Moscow';
 const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 const DEFAULT_HORIZON = 14;
 const THEMES = ['plum', 'rose', 'wine', 'olive', 'sand', 'ink'];
 const CATEGORIES = ['manicure', 'massage', 'brows', 'other'];
-const CATEGORY_EMOJI = { manicure: '💅', massage: '💆', brows: '✨', other: '📌' };
 const WEEK = [
   { d: 1, t: 'Пн' }, { d: 2, t: 'Вт' }, { d: 3, t: 'Ср' }, { d: 4, t: 'Чт' },
   { d: 5, t: 'Пт' }, { d: 6, t: 'Сб' }, { d: 0, t: 'Вс' }
@@ -26,42 +17,6 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[c]));
 const fmtPrice = (n) => Number(n).toLocaleString('ru-RU') + '\u00a0₽';
-
-const DEFAULT_GALLERY = [
-  'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1610992015732-2449b76344bc?auto=format&fit=crop&w=800&q=80'
-];
-const DEFAULT_SERVICES = [
-  { name: 'Комбинированный маникюр', price: 1500, dur: '1,5 ч' },
-  { name: 'Маникюр + выравнивание + гель-лак', price: 2200, dur: '2 ч' },
-  { name: 'Наращивание / Архитектура ногтей', price: 3500, dur: '2,5 ч' },
-  { name: 'SMART-педикюр (полный)', price: 2800, dur: '1,5 ч' }
-];
-const DEFAULTS = {
-  name: 'Анна | Маникюр',
-  desc: 'Аккуратно, стерильно, без спешки',
-  photo: '',
-  addr: 'ул. Малая Бронная, 12, студия 204',
-  hint: 'Вход со двора, 2 этаж, домофон 204',
-  chatId: '123456789',
-  services: DEFAULT_SERVICES,
-  slots: ['10:00', '12:30', '15:00', '18:00'],
-  gallery: DEFAULT_GALLERY.slice(),
-  tz: DEFAULT_TZ,
-  workDays: DEFAULT_WORK_DAYS.slice(),
-  horizon: DEFAULT_HORIZON,
-  category: 'manicure',
-  theme: 'plum',
-  legalName: '',
-  legalStatus: '',
-  inn: '',
-  revokeContact: '',
-  phone: '',
-  telegram: '',
-  whatsapp: ''
-};
 
 const photoEl = $('#master-photo');
 const DEFAULT_AVATAR = photoEl.src;
@@ -93,6 +48,8 @@ let lbIndex = 0;
 let sending = false;
 let lastObjectUrl = '';
 let draft = [];
+let legacyMode = false;
+let busy = new Set();
 
 function validTz(tz) {
   const candidate = String(tz || '').trim() || DEFAULT_TZ;
@@ -171,7 +128,9 @@ function cleanInn(v) {
   return d.length === 10 || d.length === 12 ? d : '';
 }
 
-function clean(r) {
+function clean(r, opts) {
+  const requireChat = !opts || opts.requireChat !== false;
+  const allowEmptyServices = Boolean(opts && opts.allowEmptyServices);
   try {
     if (!r || typeof r !== 'object') return null;
     const str = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
@@ -184,8 +143,14 @@ function clean(r) {
       }
     }
     const slots = parseSlots(Array.isArray(r.slots) ? r.slots.join(',') : r.slots);
-    const chatId = str(r.chatId, 20);
-    if (!str(r.name, 60) || !/^-?\d{5,18}$/.test(chatId) || !services.length || !slots) return null;
+    let chatId = str(r.chatId, 20);
+    if (!str(r.name, 60) || !slots) return null;
+    if (!services.length && !allowEmptyServices) return null;
+    if (requireChat) {
+      if (!/^-?\d{5,18}$/.test(chatId)) return null;
+    } else if (!/^-?\d{5,18}$/.test(chatId)) {
+      chatId = '';
+    }
     const photo = str(r.photo, 500);
     const category = CATEGORIES.includes(r.category) ? r.category : 'other';
     const theme = THEMES.includes(r.theme) ? r.theme : 'plum';
@@ -251,7 +216,16 @@ function fromB64(s) {
 }
 
 function linkFor(c) {
+  if (c && c.slug) return location.origin + '/' + c.slug;
   return location.href.split('#')[0].split('?')[0] + '?config=' + toB64(pack(c));
+}
+
+function configFromApi(data) {
+  const c = clean(Object.assign({}, data.profile || {}, { chatId: '' }), { requireChat: false, allowEmptyServices: true });
+  if (!c) return null;
+  c.slug = data.slug;
+  c.published = Boolean(data.published);
+  return c;
 }
 
 function unpackConfig(raw) {
@@ -270,15 +244,20 @@ function unpackConfig(raw) {
   }
 }
 
-function readStored() {
-  try { return clean(JSON.parse(localStorage.getItem(STORE_KEY))); }
-  catch (e) { return null; }
+function showView(name) {
+  ['lock', 'broken', 'app', 'admin', 'loading', 'preparing'].forEach((view) => {
+    const el = document.getElementById(view + '-view');
+    if (el) el.classList.toggle('is-hidden', view !== name);
+  });
 }
 
-function showView(name) {
-  $('#lock-view').classList.toggle('is-hidden', name !== 'lock');
-  $('#broken-view').classList.toggle('is-hidden', name !== 'broken');
-  $('#app-view').classList.toggle('is-hidden', name !== 'app');
+function showBroken(title, text) {
+  const heading = document.querySelector('#broken-view h1');
+  const paragraph = $('#broken-text');
+  if (heading && title) heading.textContent = title;
+  if (paragraph && text) paragraph.textContent = text;
+  document.title = title || 'Ссылка повреждена';
+  showView('broken');
 }
 
 function applyTheme(id) {
@@ -383,6 +362,8 @@ function applyConfig(c) {
   document.title = c.name + ' — онлайн-запись';
   $('#master-name').textContent = c.name;
   $('#master-desc').textContent = c.desc;
+  const draftNote = $('#draft-note');
+  if (draftNote) draftNote.classList.toggle('is-hidden', c.published !== false);
   setHero(c.photo);
   renderServices();
   renderGallery();
@@ -498,7 +479,22 @@ function slotStatus(iso, time) {
   if (!day || !day.work) return 'off';
   const when = BookingCalendar.zonedTimeToUtc(iso, time, config.tz);
   if (when.getTime() <= Date.now()) return 'past';
+  if (busy.has(iso + 'T' + time)) return 'busy';
   return 'free';
+}
+
+async function refreshBusy() {
+  if (!config || !config.slug || legacyMode || !DAYS.length) return;
+  const from = DAYS[0].iso;
+  const to = DAYS[DAYS.length - 1].iso;
+  try {
+    const res = await fetch('/api/masters/' + encodeURIComponent(config.slug) + '/slots?from=' + from + '&to=' + to);
+    const data = await res.json();
+    if (data && data.ok && Array.isArray(data.busy)) busy = new Set(data.busy);
+  } catch (e) { /* сервер ещё раз проверит слот при отправке */ }
+  if (state.slot && slotStatus(state.iso, state.slot) !== 'free') state.slot = null;
+  renderDates();
+  renderSlots();
 }
 
 function dayAvailable(day) {
@@ -548,6 +544,7 @@ function renderSlots() {
     b.disabled = !free;
     b.setAttribute('aria-pressed', sel ? 'true' : 'false');
     if (status === 'past') b.setAttribute('aria-label', t + ', это время уже прошло');
+    else if (status === 'busy') b.setAttribute('aria-label', t + ', это время уже занято');
     else if (status === 'off') b.setAttribute('aria-label', t + ', в этот день нет приёма');
     else b.setAttribute('aria-label', t);
     const base = 'rounded-xl py-3 text-[15px] font-medium ';
@@ -653,6 +650,7 @@ function openModal(service, trigger) {
   renderSlots();
   setSheet(modal, true);
   sheet.focus({ preventScroll: true });
+  refreshBusy();
 }
 
 function closeModal() {
@@ -677,11 +675,15 @@ function showFallback(kind) {
   const when = state.service && state.iso && state.slot
     ? ' В заявке: ' + state.service.name + ', ' + fullDate(state.iso) + ', ' + state.slot + '.'
     : '';
-  const links = contactLinks(config);
-  const base = kind === 'unconfigured'
-    ? 'Заявка с этой страницы сейчас не отправляется: уведомления мастеру ещё не подключены. Напишите мастеру напрямую — время он подтвердит сам.'
-    : 'Не удалось отправить заявку. Проверьте интернет или напишите мастеру напрямую.';
-  const extra = links.length ? '' : ' Контакты мастера в ссылке не указаны — попросите телефон или мессенджер.';
+  const links = kind === 'slot_taken' || kind === 'rate_limited' || kind === 'validation' ? [] : contactLinks(config);
+  let base = 'Не удалось отправить заявку. Проверьте интернет или напишите мастеру напрямую.';
+  if (kind === 'slot_taken') base = 'Это время уже занято. Выберите другое.';
+  else if (kind === 'rate_limited') base = 'Слишком много заявок с этого телефона или адреса. Попробуйте позже.';
+  else if (kind === 'validation') base = 'Проверьте имя, телефон и согласие.';
+  else if (kind === 'unconfigured') base = 'Это ссылка старого формата: заявка с неё на сервер не отправляется. Напишите мастеру напрямую — время он подтвердит сам.';
+  const extra = links.length || kind === 'slot_taken' || kind === 'rate_limited' || kind === 'validation'
+    ? ''
+    : ' Контакты мастера в ссылке не указаны — попросите телефон или мессенджер.';
   const p = document.createElement('p');
   p.className = 'text-center text-sm leading-relaxed text-neutral-700';
   p.textContent = base + when + extra;
@@ -741,7 +743,7 @@ function openLegal(kind, opener) {
   const data = 'Имя, номер телефона, выбранная услуга, дата и время визита.';
   const purpose = 'Связь мастера с клиентом, чтобы подтвердить заявку, напомнить о визите и оказать выбранную услугу.';
   const actions = 'Сбор, запись, систематизация, хранение, уточнение, использование, передача, удаление.';
-  const transfer = 'Заявка доставляется оператору через мессенджер Telegram. Telegram получает текст сообщения и является получателем данных.';
+  const transfer = 'Заявка сначала записывается в базу на территории Российской Федерации (Yandex Cloud, регион ru-central1). После записи мастеру отправляется уведомление в Telegram: мессенджер используется только чтобы уведомить мастера и получает текст заявки (имя, телефон, услуга, дата и время).';
   if (kind === 'consent') {
     title.textContent = 'Согласие на обработку персональных данных';
     addPara(body, 'Оператор.', 'Оператором персональных данных является ' + op + '.');
@@ -749,7 +751,7 @@ function openLegal(kind, opener) {
     addPara(body, 'Перечень данных.', data);
     addPara(body, 'Действия с данными.', actions);
     addPara(body, 'Передача.', transfer);
-    addPara(body, 'Срок хранения.', 'До отзыва согласия.');
+    addPara(body, 'Срок хранения.', 'До отзыва согласия. Заявка хранится в базе Yandex Cloud в России; мастер может удалить её в панели.');
     addPara(body, 'Отзыв согласия.', revokePhrase(config));
   } else {
     title.textContent = 'Политика конфиденциальности';
@@ -757,7 +759,7 @@ function openLegal(kind, opener) {
     addPara(body, '2. Оператор.', 'Оператором персональных данных является ' + op + '. Эта страница — форма заявки.');
     addPara(body, '3. Состав данных.', data);
     addPara(body, '4. Цель обработки.', purpose);
-    addPara(body, '5. Доставка заявки.', transfer);
+    addPara(body, '5. Где хранится заявка.', transfer);
     addPara(body, '6. Права.', revokePhrase(config));
   }
   setSheet(legal, true);
@@ -769,54 +771,39 @@ function closeLegal() {
   if (legalReturn && legalReturn.focus) legalReturn.focus({ preventScroll: true });
 }
 
-function buildMessage(payload) {
-  const emoji = CATEGORY_EMOJI[config.category] || CATEGORY_EMOJI.other;
-  const waText = 'Здравствуйте, ' + payload.name + '! Вы оставили заявку на «' + payload.service.name + '» (' + payload.date + ', ' + payload.time + ').'
-    + (config.addr ? ' Адрес: ' + config.addr + '.' : '');
-  const digits = String(payload.phone).replace(/\D/g, '');
-  const waUrl = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(waText);
-  return [
-    '🔔 <b>Новая заявка</b>',
-    '',
-    emoji + ' Услуга: <b>' + esc(payload.service.name) + '</b>',
-    'Стоимость: ' + esc(fmtPrice(payload.service.price)),
-    'Дата: ' + esc(payload.date),
-    'Время: <b>' + esc(payload.time) + '</b>',
-    'Клиент: ' + esc(payload.name),
-    'Телефон: <code>' + esc(payload.phone) + '</code>',
-    'Согласие на обработку ПДн: да',
-    '',
-    '<a href="' + esc(waUrl) + '">Написать клиенту в WhatsApp</a>'
-  ].join('\n');
-}
-
-function isDeliveryConfigured() {
-  return Boolean(String(SEND_ENDPOINT).trim() || String(BOT_TOKEN).trim());
-}
-
-async function deliver(text) {
-  const endpoint = String(SEND_ENDPOINT).trim();
-  const token = String(BOT_TOKEN).trim();
-  if (!endpoint && !token) {
-    const err = new Error('unconfigured');
-    err.code = 'unconfigured';
-    throw err;
-  }
+async function deliver(payload) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15000);
   try {
-    const url = endpoint || ('https://api.telegram.org/bot' + token + '/sendMessage');
-    const body = endpoint
-      ? { chatId: String(config.chatId), text, parseMode: 'HTML' }
-      : { chat_id: String(config.chatId), text, parse_mode: 'HTML', disable_web_page_preview: true };
-    const res = await fetch(url, {
+    const res = await fetch(SEND_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
       signal: ctrl.signal
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.ok === false) throw new Error(data.description || 'send failed');
+    if (data.error === 'slot_taken' || res.status === 409) {
+      const err = new Error('slot');
+      err.code = 'slot_taken';
+      throw err;
+    }
+    if (data.error === 'rate_limited' || res.status === 429) {
+      const err = new Error('rate');
+      err.code = 'rate_limited';
+      throw err;
+    }
+    if (data.error === 'validation') {
+      const err = new Error('validation');
+      err.code = 'validation';
+      err.serverMessage = data.message;
+      throw err;
+    }
+    if (!res.ok || data.ok === false) {
+      const err = new Error('send');
+      err.code = 'network';
+      throw err;
+    }
     return data;
   } finally {
     clearTimeout(timer);
@@ -962,7 +949,6 @@ function fillPanel(c) {
   $('#p-phone').value = c.phone || '';
   $('#p-telegram').value = c.telegram || '';
   $('#p-whatsapp').value = c.whatsapp || '';
-  $('#p-chat').value = c.chatId;
   $('#p-gallery').value = (c.gallery || []).join('\n');
   $('#p-horizon').value = String(c.horizon || DEFAULT_HORIZON);
   $('#p-slots').value = c.slots.join(', ');
@@ -984,11 +970,62 @@ function showLink(c, scroll) {
   if (scroll) $('#link-block').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
+const STATUS_TEXT = {
+  pending: 'Ждёт подтверждения',
+  confirmed: 'Подтверждена',
+  cancelled: 'Отменена'
+};
+
+function renderBookings(items) {
+  const box = $('#booking-list');
+  if (!items.length) {
+    box.textContent = 'Пока нет заявок.';
+    return;
+  }
+  box.innerHTML = items.map((b) => {
+    const actions = [];
+    if (b.status === 'pending') {
+      actions.push('<button type="button" data-act="confirm" data-id="' + esc(b.id) + '" class="rounded-full bg-tg px-3 py-1.5 text-xs font-semibold text-white">Подтвердить</button>');
+      actions.push('<button type="button" data-act="cancel" data-id="' + esc(b.id) + '" class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 ring-1 ring-ios">Отменить</button>');
+    }
+    actions.push('<button type="button" data-act="delete" data-id="' + esc(b.id) + '" class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-ios">Удалить</button>');
+    return '<article class="rounded-xl bg-ios p-3">'
+      + '<p class="font-medium">' + esc(b.dateText || b.date) + ', ' + esc(b.time) + '</p>'
+      + '<p class="mt-1 text-neutral-700">' + esc(b.serviceName) + ' · ' + esc(fmtPrice(b.servicePrice)) + '</p>'
+      + '<p class="mt-1">' + esc(b.name) + ' · ' + esc(b.phone) + '</p>'
+      + '<p class="mt-1 text-xs text-neutral-600">' + esc(STATUS_TEXT[b.status] || b.status) + '</p>'
+      + '<div class="mt-2 flex flex-wrap gap-2">' + actions.join('') + '</div>'
+      + '</article>';
+  }).join('');
+}
+
+async function loadBookings() {
+  const box = $('#booking-list');
+  if (!box) return;
+  box.textContent = 'Загрузка заявок…';
+  try {
+    const res = await fetch('/api/admin/bookings', { credentials: 'same-origin' });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      box.textContent = 'Войдите снова по ссылке из бота.';
+      return;
+    }
+    if (!res.ok || !data.ok) {
+      box.textContent = 'Не удалось загрузить заявки.';
+      return;
+    }
+    renderBookings(data.bookings || []);
+  } catch (e) {
+    box.textContent = 'Не удалось загрузить заявки.';
+  }
+}
+
 function openPanel() {
   fillPanel(config);
   $('#p-legal').checked = false;
   $('#panel-err').classList.add('is-hidden');
   showLink(config, false);
+  loadBookings();
   setSheet(panel, true);
   panelSheet.focus({ preventScroll: true });
 }
@@ -1013,7 +1050,37 @@ function setupAdmin() {
     draft.splice(+del.dataset.del, 1);
     renderRows();
   });
-  $('#p-save').addEventListener('click', () => {
+  $('#booking-list').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/admin/bookings/' + encodeURIComponent(btn.dataset.id) + '/' + btn.dataset.act, {
+        method: 'POST',
+        credentials: 'same-origin'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        const el = $('#panel-err');
+        el.textContent = data.message || 'Не удалось обновить заявку';
+        el.classList.remove('is-hidden');
+        return;
+      }
+      $('#panel-err').classList.add('is-hidden');
+      loadBookings();
+    } catch (err) {
+      const el = $('#panel-err');
+      el.textContent = 'Не удалось обновить заявку';
+      el.classList.remove('is-hidden');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  $('#p-logout').addEventListener('click', async () => {
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+    location.replace('/admin');
+  });
+  $('#p-save').addEventListener('click', async () => {
     readRows();
     const fail = (msg) => {
       const el = $('#panel-err');
@@ -1046,14 +1113,13 @@ function setupAdmin() {
     if (!workDays.length) return fail('Выберите хотя бы один день приёма');
     const horizon = parseHorizon($('#p-horizon').value);
     if (!horizon) return fail('Горизонт записи: число от 1 до 60');
-    const c = clean({
+    const payload = {
       name: $('#p-name').value,
       desc: $('#p-desc').value,
       photo,
       addr: $('#p-addr').value,
       hint: $('#p-hint').value,
       gallery: gal,
-      chatId: $('#p-chat').value,
       services,
       slots,
       tz: $('#p-tz').value,
@@ -1068,14 +1134,32 @@ function setupAdmin() {
       phone: phoneRaw,
       telegram: tgRaw,
       whatsapp: waRaw
-    });
-    if (!c) return fail('Проверьте имя, корректность Chat ID (только цифры) и наличие хотя бы одной услуги');
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(c)); } catch (e) { /* хранилище может быть недоступно */ }
-    $('#panel-err').classList.add('is-hidden');
-    applyConfig(c);
-    fillPanel(c);
-    showLink(c, true);
-    haptic('success');
+    };
+    const c = clean(Object.assign({}, payload, { chatId: '' }), { requireChat: false });
+    if (!c) return fail('Проверьте имя и наличие хотя бы одной услуги');
+    const btn = $('#p-save');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/admin/profile', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) return fail(data.message || 'Не удалось сохранить профиль');
+      const next = configFromApi(data);
+      if (!next) return fail('Сервер вернул неполный профиль');
+      $('#panel-err').classList.add('is-hidden');
+      applyConfig(next);
+      fillPanel(next);
+      showLink(next, true);
+      haptic('success');
+    } catch (e) {
+      fail('Не удалось сохранить профиль. Проверьте интернет.');
+    } finally {
+      btn.disabled = false;
+    }
   });
   $('#p-copy').addEventListener('click', async () => {
     const box = $('#p-link');
@@ -1091,30 +1175,125 @@ function setupAdmin() {
   });
 }
 
-function route() {
+async function exchangeToken(token) {
+  const res = await fetch('/api/admin/session', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    const err = $('#admin-error');
+    if (err) {
+      err.textContent = data.message || 'Ссылка для входа недействительна или уже использована. Запросите новую у бота.';
+      err.classList.remove('is-hidden');
+    }
+    showView('admin');
+    document.title = 'Вход для мастера';
+    return '';
+  }
+  return data.slug || '';
+}
+
+async function currentMaster() {
+  try {
+    const res = await fetch('/api/admin/me', { credentials: 'same-origin' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && data.ok ? data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function route() {
   const params = new URLSearchParams(location.search);
-  const clientMode = params.has('config');
-  const adminMode = params.get('key') === ADMIN_KEY;
-  if (clientMode) {
-    config = unpackConfig(params.get('config'));
-    if (!config) {
-      showView('broken');
-      document.title = 'Ссылка повреждена';
+  const path = decodeURIComponent((location.pathname || '/').replace(/\/+$/, '') || '/');
+  const token = params.get('token');
+  legacyMode = false;
+  busy = new Set();
+
+  if (path === '/admin') {
+    showView('admin');
+    document.title = 'Вход для мастера';
+    if (token) {
+      const slug = await exchangeToken(token);
+      if (slug) location.replace('/' + slug + '?admin=1');
       return;
     }
-  } else if (adminMode) {
-    config = readStored() || clean(DEFAULTS);
-  } else {
+    const me = await currentMaster();
+    if (me && me.slug) location.replace('/' + me.slug + '?admin=1');
+    return;
+  }
+
+  if (path === '/' && params.has('config')) {
+    legacyMode = true;
+    config = unpackConfig(params.get('config'));
+    if (!config) {
+      showBroken('Ссылка повреждена', 'Не удалось прочитать настройки мастера. Попросите прислать актуальную ссылку на запись.');
+      return;
+    }
+    showView('app');
+    applyConfig(config);
+    const oldSettings = $('#open-settings');
+    if (oldSettings) oldSettings.remove();
+    return;
+  }
+
+  if (path === '/') {
     showView('lock');
     document.title = 'Онлайн-запись к мастеру';
     return;
   }
-  showView('app');
-  applyConfig(config);
-  if (adminMode) setupAdmin();
-  else {
-    const btn = $('#open-settings');
-    if (btn) btn.remove();
+
+  const slug = path.slice(1);
+  if (!/^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])$/.test(slug)) {
+    showBroken('Ссылка повреждена', 'Не удалось прочитать адрес страницы. Попросите мастера прислать актуальную ссылку.');
+    return;
+  }
+
+  showView('loading');
+  try {
+    const res = await fetch('/api/masters/' + encodeURIComponent(slug));
+    const data = await res.json().catch(() => ({}));
+    let source = data;
+    if (!res.ok || !data.ok) {
+      const me = await currentMaster();
+      if (data.error === 'not_published' && me && me.slug === slug) {
+        const own = await fetch('/api/admin/profile', { credentials: 'same-origin' });
+        source = await own.json().catch(() => ({}));
+        if (!own.ok || !source.ok) {
+          showView('preparing');
+          document.title = 'Страница ещё готовится';
+          return;
+        }
+      } else if (data.error === 'not_published') {
+        showView('preparing');
+        document.title = 'Страница ещё готовится';
+        return;
+      } else {
+        showBroken('Страница не найдена', 'Такой страницы мастера нет. Проверьте ссылку или попросите отправить её ещё раз.');
+        return;
+      }
+    }
+    config = configFromApi(source);
+    if (!config) {
+      showBroken('Ссылка повреждена', 'Не удалось прочитать страницу мастера.');
+      return;
+    }
+    showView('app');
+    applyConfig(config);
+    const me = source === data ? await currentMaster() : { slug };
+    if (me && me.slug === slug) {
+      setupAdmin();
+      if (params.get('admin') === '1') openPanel();
+    } else {
+      const settings = $('#open-settings');
+      if (settings) settings.remove();
+    }
+  } catch (e) {
+    showBroken('Не удалось открыть страницу', 'Проверьте интернет и откройте ссылку ещё раз.');
   }
 }
 
@@ -1207,14 +1386,36 @@ confirmBtn.addEventListener('click', async () => {
   confirmBtn.setAttribute('aria-busy', 'true');
   confirmBtn.textContent = 'Отправка...';
   try {
-    if (!isDeliveryConfigured()) {
+    if (legacyMode) {
       showFallback('unconfigured');
       return;
     }
-    await deliver(buildMessage({ service: state.service, date: dateText, time, name, phone }));
+    const data = await deliver({
+      slug: config.slug,
+      serviceName: state.service.name,
+      date: state.iso,
+      time,
+      name,
+      phone,
+      consent: true
+    });
     showSuccess(name, dateText, time);
+    if (data && data.notified === false) {
+      $('#done-text').textContent += ' Заявка сохранена. Если сообщение в Telegram не пришло, она есть в списке заявок мастера.';
+    }
   } catch (err) {
-    showFallback(err && err.code === 'unconfigured' ? 'unconfigured' : 'network');
+    const code = err && err.code;
+    if (code === 'slot_taken') {
+      busy.add(state.iso + 'T' + time);
+      state.slot = null;
+      renderDates();
+      renderSlots();
+    }
+    showFallback(code === 'slot_taken' || code === 'rate_limited' || code === 'validation' || code === 'unconfigured' ? code : 'network');
+    if (code === 'validation' && err.serverMessage) {
+      const note = $('#send-fallback p');
+      if (note) note.textContent = err.serverMessage;
+    }
     haptic('error');
   } finally {
     sending = false;
@@ -1262,7 +1463,7 @@ function syncTelegramCalendarNote() {
 }
 
 initDayToggles();
-route();
+route().catch(() => showBroken('Не удалось открыть страницу', 'Проверьте интернет и откройте ссылку ещё раз.'));
 syncTelegramCalendarNote();
 loadTelegram().then((tg) => {
   tgApp = tg;
