@@ -12,6 +12,7 @@ const WEEK = [
 ];
 
 const $ = (s) => document.querySelector(s);
+const GALLERY_MAX = 12;
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -164,7 +165,7 @@ function clean(r, opts) {
       chatId,
       services,
       slots,
-      gallery: (Array.isArray(r.gallery) ? r.gallery : []).map((u) => str(u, 500)).filter((u) => /^https:\/\//i.test(u)).slice(0, 10),
+      gallery: (Array.isArray(r.gallery) ? r.gallery : []).map((u) => str(u, 500)).filter((u) => /^https:\/\//i.test(u)).slice(0, GALLERY_MAX),
       tz: validTz(str(r.tz, 64)),
       workDays: parseWorkDays(r.workDays) || DEFAULT_WORK_DAYS.slice(),
       horizon: parseHorizon(r.horizon) || DEFAULT_HORIZON,
@@ -950,6 +951,8 @@ function fillPanel(c) {
   $('#p-telegram').value = c.telegram || '';
   $('#p-whatsapp').value = c.whatsapp || '';
   $('#p-gallery').value = (c.gallery || []).join('\n');
+  renderPhotoField();
+  renderGalleryField();
   $('#p-horizon').value = String(c.horizon || DEFAULT_HORIZON);
   $('#p-slots').value = c.slots.join(', ');
   $('#p-legal-name').value = c.legalName || '';
@@ -1036,7 +1039,229 @@ function closePanel() {
   if (btn) btn.focus({ preventScroll: true });
 }
 
+// ---- Фото из галереи телефона -------------------------------------------
+// Снимок сжимается в браузере (canvas -> JPEG, до 1600 px по длинной
+// стороне) и загружается в POST /api/admin/photos. В поля профиля
+// попадает обычная https-ссылка, поэтому ручные ссылки тоже работают.
+const PHOTO_MAX_SIDE = 1600;
+const PHOTO_MAX_BYTES = 1900 * 1024;
+
+function galleryUrls() {
+  return $('#p-gallery').value.split(/[\s,]+/).filter(Boolean);
+}
+
+function setGalleryUrls(list) {
+  $('#p-gallery').value = list.join('\n');
+  renderGalleryField();
+}
+
+function photoStatus(id, text, isError) {
+  const el = $(id);
+  el.textContent = text || '';
+  el.classList.toggle('is-hidden', !text);
+  el.classList.toggle('text-red-600', Boolean(isError));
+  el.classList.toggle('text-neutral-600', !isError);
+}
+
+function renderPhotoField() {
+  const url = $('#p-photo').value.trim();
+  const img = $('#p-photo-preview');
+  const ok = /^https:\/\//i.test(url);
+  if (ok && img.getAttribute('src') !== url) img.src = url;
+  img.classList.toggle('is-hidden', !ok);
+  $('#p-photo-empty').classList.toggle('is-hidden', ok);
+  $('#p-photo-remove').classList.toggle('is-hidden', !url);
+}
+
+function renderGalleryField() {
+  const list = galleryUrls();
+  const grid = $('#p-gallery-grid');
+  grid.innerHTML = list.map((u, i) => `
+    <div class="relative aspect-square overflow-hidden rounded-xl bg-ios">
+      <img src="${escapeAttr(u)}" alt="Фото ${i + 1}" loading="lazy" class="h-full w-full object-cover">
+      <button type="button" data-gal-del="${i}" aria-label="Удалить фото ${i + 1}" class="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-base leading-none text-white">×</button>
+      ${i > 0 ? `<button type="button" data-gal-left="${i}" aria-label="Переместить фото ${i + 1} левее" class="absolute bottom-1 left-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-sm leading-none text-white">←</button>` : ''}
+    </div>`).join('');
+  $('#p-gallery-count').textContent = list.length + ' из ' + GALLERY_MAX;
+  $('#p-gallery-add').classList.toggle('is-hidden', list.length >= GALLERY_MAX);
+}
+
+function escapeAttr(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => resolve({ img, url });
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+
+function canvasBlob(canvas, quality) {
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+
+// Safari сам декодирует HEIC с iPhone; ориентацию по EXIF браузеры уже
+// учитывают при отрисовке <img>.
+async function compressPhoto(file) {
+  const { img, url } = await loadImage(file);
+  try {
+    const w0 = img.naturalWidth;
+    const h0 = img.naturalHeight;
+    if (!w0 || !h0) throw new Error('decode');
+    let side = PHOTO_MAX_SIDE;
+    let quality = 0.82;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const k = Math.min(1, side / Math.max(w0, h0));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(w0 * k));
+      canvas.height = Math.max(1, Math.round(h0 * k));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await canvasBlob(canvas, quality);
+      canvas.width = 0;
+      canvas.height = 0;
+      if (blob && blob.size <= PHOTO_MAX_BYTES) return blob;
+      side = Math.round(side * 0.8);
+      quality = Math.max(0.6, quality - 0.08);
+    }
+    throw new Error('too_big');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function sendPhoto(blob, kind, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/admin/photos?kind=' + kind);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('Content-Type', 'image/jpeg');
+    xhr.timeout = 60000;
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => {
+      let data = {};
+      try { data = JSON.parse(xhr.responseText); } catch (e) { /* ignore */ }
+      if (xhr.status === 200 && data.ok && data.url) resolve(data.url);
+      else if (xhr.status === 401) reject(new Error('Сессия закончилась. Войдите заново по ссылке из Telegram.'));
+      else reject(new Error(data.message || 'Не удалось загрузить фото. Попробуйте ещё раз.'));
+    };
+    xhr.onerror = () => reject(new Error('Нет связи. Проверьте интернет и попробуйте ещё раз.'));
+    xhr.ontimeout = () => reject(new Error('Загрузка заняла слишком долго. Попробуйте ещё раз.'));
+    xhr.send(blob);
+  });
+}
+
+async function uploadOne(file, kind, statusId, prefix) {
+  if (file.type && !/^image\//.test(file.type)) throw new Error('Это не фото. Выберите снимок из галереи.');
+  photoStatus(statusId, prefix + 'Сжимаем фото…');
+  let blob;
+  try {
+    blob = await compressPhoto(file);
+  } catch (e) {
+    throw new Error(e.message === 'too_big'
+      ? 'Фото слишком большое даже после сжатия. Выберите другое.'
+      : 'Не удалось открыть фото. Выберите снимок в формате JPEG или PNG.');
+  }
+  return sendPhoto(blob, kind, (pct) => photoStatus(statusId, prefix + 'Загрузка… ' + pct + '%'));
+}
+
+function setupPhotoFields() {
+  const avatarInput = $('#p-photo-file');
+  const galleryInput = $('#p-gallery-file');
+  let busy = false;
+  const lock = (on) => {
+    busy = on;
+    avatarInput.disabled = on;
+    galleryInput.disabled = on;
+    $('#p-save').disabled = on;
+  };
+
+  $('#p-photo').addEventListener('input', renderPhotoField);
+  $('#p-gallery').addEventListener('input', renderGalleryField);
+  $('#p-photo-preview').addEventListener('error', () => {
+    if ($('#p-photo').value.trim()) photoStatus('#p-photo-status', 'Фото по ссылке не открывается.', true);
+  });
+  $('#p-photo-remove').addEventListener('click', () => {
+    $('#p-photo').value = '';
+    renderPhotoField();
+    photoStatus('#p-photo-status', 'Фото убрано. Нажмите «Сохранить профиль».');
+  });
+
+  avatarInput.addEventListener('change', async () => {
+    const file = avatarInput.files && avatarInput.files[0];
+    avatarInput.value = '';
+    if (!file || busy) return;
+    lock(true);
+    try {
+      const url = await uploadOne(file, 'avatar', '#p-photo-status', '');
+      $('#p-photo').value = url;
+      renderPhotoField();
+      photoStatus('#p-photo-status', 'Готово. Нажмите «Сохранить профиль».');
+      haptic('success');
+    } catch (e) {
+      photoStatus('#p-photo-status', e.message, true);
+    } finally {
+      lock(false);
+    }
+  });
+
+  galleryInput.addEventListener('change', async () => {
+    const files = Array.from(galleryInput.files || []);
+    galleryInput.value = '';
+    if (!files.length || busy) return;
+    const room = GALLERY_MAX - galleryUrls().length;
+    if (room <= 0) return photoStatus('#p-gallery-status', 'В портфолио уже ' + GALLERY_MAX + ' фото. Удалите лишние.', true);
+    const queue = files.slice(0, room);
+    lock(true);
+    let done = 0;
+    let error = '';
+    try {
+      for (let i = 0; i < queue.length; i += 1) {
+        const prefix = queue.length > 1 ? 'Фото ' + (i + 1) + ' из ' + queue.length + ': ' : '';
+        try {
+          const url = await uploadOne(queue[i], 'gallery', '#p-gallery-status', prefix);
+          setGalleryUrls(galleryUrls().concat(url).slice(0, GALLERY_MAX));
+          done += 1;
+        } catch (e) {
+          error = e.message;
+          if (/Сессия|связи/.test(error)) break;
+        }
+      }
+    } finally {
+      lock(false);
+    }
+    const skipped = files.length - queue.length;
+    let text = done ? 'Добавлено фото: ' + done + '. Нажмите «Сохранить профиль».' : '';
+    if (skipped > 0) text += (text ? ' ' : '') + 'Не поместилось: ' + skipped + ' (максимум ' + GALLERY_MAX + ').';
+    if (error) text = (text ? text + ' ' : '') + error;
+    photoStatus('#p-gallery-status', text, Boolean(error) && !done);
+    if (done) haptic('success');
+  });
+
+  $('#p-gallery-grid').addEventListener('click', (e) => {
+    const del = e.target.closest('[data-gal-del]');
+    const left = e.target.closest('[data-gal-left]');
+    const list = galleryUrls();
+    if (del) {
+      list.splice(Number(del.dataset.galDel), 1);
+      setGalleryUrls(list);
+      photoStatus('#p-gallery-status', 'Фото убрано. Нажмите «Сохранить профиль».');
+    } else if (left) {
+      const i = Number(left.dataset.galLeft);
+      if (i > 0) [list[i - 1], list[i]] = [list[i], list[i - 1]];
+      setGalleryUrls(list);
+    }
+  });
+}
+
 function setupAdmin() {
+  setupPhotoFields();
   const settingsBtn = $('#open-settings');
   settingsBtn.classList.remove('is-hidden');
   settingsBtn.addEventListener('click', openPanel);
@@ -1107,6 +1332,7 @@ function setupAdmin() {
     if (services.some((s) => s.price === '' || Number.isNaN(Number(s.price)))) return fail('Укажите цену каждой услуги числом');
     const gal = $('#p-gallery').value.split(/[\s,]+/).filter(Boolean);
     if (gal.some((u) => !/^https:\/\//i.test(u))) return fail('Каждая ссылка в портфолио должна начинаться с https://');
+    if (gal.length > GALLERY_MAX) return fail('В портфолио не больше ' + GALLERY_MAX + ' фото');
     const slots = parseSlots($('#p-slots').value);
     if (!slots) return fail('Часы приёма укажите в формате ЧЧ:ММ через запятую, например: 10:00, 12:30');
     const workDays = readWorkDays();

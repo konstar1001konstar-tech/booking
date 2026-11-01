@@ -9,6 +9,7 @@ const { sign, verify, randomId, cookie, readCookie, safeEqual, SESSION_MS, LOGIN
 const { checkTelegramLogin } = require('./lib/telegram-auth');
 const { headerMap } = require('./http');
 const outbox = require('./outbox');
+const photos = require('./photos');
 
 function secretsOf(deps) {
   return deps.secrets || { botToken: '', sessionSecret: '', webhookSecret: '' };
@@ -217,7 +218,7 @@ async function openWidgetSession(deps, body) {
   };
 }
 
-async function saveProfile(deps, master, body) {
+async function saveProfile(deps, master, body, base) {
   const cleaned = sanitizeProfile(body || {});
   if (!cleaned.ok) throw new HttpError(400, 'validation', cleaned.message);
   const updated = await deps.repo.updateMasterProfile(
@@ -226,6 +227,7 @@ async function saveProfile(deps, master, body) {
     true,
     nowOf(deps).toISOString()
   );
+  await photos.cleanupPhotos(deps, master.slug, base || '', master.profile, updated.profile || cleaned.profile);
   return { ok: true, slug: master.slug, published: true, profile: updated.profile || cleaned.profile };
 }
 
