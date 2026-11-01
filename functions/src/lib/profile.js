@@ -7,7 +7,7 @@ const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 const DEFAULT_SLOTS = ['10:00', '12:00', '14:00', '16:00', '18:00'];
 const RESERVED = new Set([
   'admin', 'api', 'login', 'assets', 'static', 'health', 'index', 'app',
-  'www', 'telegram', 'webhook', 'robots', 'favicon'
+  'www', 'telegram', 'webhook', 'robots', 'favicon', 'media'
 ]);
 
 function validTz(tz) {
@@ -143,7 +143,7 @@ function sanitizeProfile(input) {
   const gallerySrc = Array.isArray(src.gallery)
     ? src.gallery
     : String(src.gallery || '').split(/[\s,]+/).filter(Boolean);
-  for (const item of gallerySrc.slice(0, 10)) {
+  for (const item of gallerySrc.slice(0, 12)) {
     const url = httpsUrl(item, 500);
     if (url == null) return { ok: false, message: 'Каждая ссылка в портфолио должна начинаться с https://' };
     if (url) gallery.push(url);

@@ -92,6 +92,34 @@ paths:
         bucket: ${bucket}
         object: robots.txt
         service_account_id: ${gateway_sa_id}
+  /media/{owner}/{file}:
+    get:
+      summary: Фото мастеров, загруженные из панели (только media/<slug>/<файл>)
+      # Валидатор шлюза не пускает ничего, кроме имени файла от POST
+      # /api/admin/photos, поэтому через этот маршрут нельзя выйти из media/
+      # (например, ..%2Fdata%2F...) и прочитать данные мастеров.
+      x-yc-apigateway-validator:
+        validateRequestParameters: true
+        validateRequestBody: false
+        validateResponseBody: false
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'
+        - name: file
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{13}-[A-Za-z0-9_-]{6,24}[.](jpg|png|webp)$'
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: 'media/{owner}/{file}'
+        service_account_id: ${gateway_sa_id}
   /{slug}:
     get:
       parameters:

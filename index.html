@@ -299,11 +299,28 @@
             <option value="Asia/Kamchatka">Камчатка</option>
           </select>
         </label>
-        <label class="mt-4 block" for="p-photo">
-          <span class="text-sm font-medium text-neutral-600">Главное фото профиля (https-ссылка)</span>
-          <input id="p-photo" type="url" inputmode="url" placeholder="https://..."
-                 class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
-        </label>
+        <div class="mt-4">
+          <span class="text-sm font-medium text-neutral-600">Главное фото профиля</span>
+          <div class="mt-1.5 flex items-center gap-3">
+            <div class="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-ios">
+              <img id="p-photo-preview" alt="Главное фото" class="is-hidden h-full w-full object-cover">
+              <span id="p-photo-empty" class="absolute inset-0 flex items-center justify-center text-xs text-neutral-600">Нет фото</span>
+            </div>
+            <div class="flex min-w-0 flex-1 flex-col gap-2">
+              <label class="block w-full cursor-pointer rounded-xl bg-tg/10 py-3 text-center text-[15px] font-semibold text-tg">
+                <input id="p-photo-file" type="file" accept="image/*" class="sr-only">
+                <span id="p-photo-btn">Загрузить из галереи</span>
+              </label>
+              <button id="p-photo-remove" type="button" class="is-hidden w-full rounded-xl py-2 text-sm font-medium text-red-600">Убрать фото</button>
+            </div>
+          </div>
+          <p id="p-photo-status" class="is-hidden mt-1.5 text-xs text-neutral-600" role="status"></p>
+          <details class="mt-2">
+            <summary class="cursor-pointer text-xs text-neutral-600">или вставить ссылку на фото</summary>
+            <input id="p-photo" type="url" inputmode="url" placeholder="https://..." aria-label="Ссылка на главное фото"
+                   class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
+          </details>
+        </div>
         <div class="mt-4 grid grid-cols-1 gap-3 rounded-2xl bg-ios/60 p-3.5">
           <label class="block" for="p-addr">
             <span class="text-sm font-medium text-neutral-600">Адрес студии / кабинета</span>
@@ -338,11 +355,24 @@
 
         <p class="mt-4 text-xs leading-snug text-neutral-600">Уведомления о заявках приходят в Telegram, с которого вы вошли. Номер чата с этой страницы не отправляется.</p>
 
-        <label class="mt-4 block" for="p-gallery">
-          <span class="text-sm font-medium text-neutral-600">Портфолио (до 10 https-ссылок, с новой строки)</span>
-          <textarea id="p-gallery" rows="3" placeholder="https://..."
-                    class="mt-1.5 w-full resize-none rounded-xl bg-ios px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40"></textarea>
-        </label>
+        <div class="mt-4">
+          <div class="flex items-baseline justify-between">
+            <span class="text-sm font-medium text-neutral-600">Портфолио</span>
+            <span id="p-gallery-count" class="text-xs text-neutral-600">0 из 12</span>
+          </div>
+          <div id="p-gallery-grid" class="mt-1.5 grid grid-cols-3 gap-2"></div>
+          <label id="p-gallery-add" class="mt-2 block w-full cursor-pointer rounded-xl bg-tg/10 py-3 text-center text-[15px] font-semibold text-tg">
+            <input id="p-gallery-file" type="file" accept="image/*" multiple class="sr-only">
+            <span id="p-gallery-btn">+ Добавить фото из галереи</span>
+          </label>
+          <p id="p-gallery-status" class="is-hidden mt-1.5 text-xs text-neutral-600" role="status"></p>
+          <details class="mt-2">
+            <summary class="cursor-pointer text-xs text-neutral-600">или вставить ссылки (с новой строки)</summary>
+            <textarea id="p-gallery" rows="3" placeholder="https://..." aria-label="Ссылки на фото портфолио"
+                      class="mt-1.5 w-full resize-none rounded-xl bg-ios px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40"></textarea>
+          </details>
+          <p class="mt-1.5 text-xs text-neutral-600">Фото появятся на странице после «Сохранить».</p>
+        </div>
 
         <h3 class="mt-6 text-sm font-medium text-neutral-600">Прайс-лист и услуги</h3>
         <div id="svc-list" class="mt-2 space-y-2"></div>

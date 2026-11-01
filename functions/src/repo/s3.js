@@ -87,6 +87,14 @@ class S3Store {
     return res.headers.get('etag') || true;
   }
 
+  async putRaw(key, buf, type, cacheControl) {
+    const headers = { 'Content-Type': type };
+    if (cacheControl) headers['Cache-Control'] = cacheControl;
+    const res = await this._req('PUT', key, { headers, body: buf });
+    if (!res.ok) throw new Error('s3 put ' + res.status);
+    return true;
+  }
+
   async del(key) {
     const res = await this._req('DELETE', key);
     if (!res.ok && res.status !== 404) throw new Error('s3 delete ' + res.status);
@@ -313,6 +321,21 @@ Object.assign(S3Repo.prototype, {
 
   async deleteOutbox(id) {
     await this.store.del(K.outbox(id));
+  },
+
+  // Фото мастеров: media/<slug>/<file>, вне data/, отдаются через API Gateway.
+  async putMedia(key, buf, type) {
+    if (!/^media\//.test(key)) throw new Error('bad media key');
+    await this.store.putRaw(key, buf, type, 'public, max-age=31536000, immutable');
+  },
+
+  async listMedia(prefix) {
+    return this.store.list(prefix);
+  },
+
+  async deleteMedia(key) {
+    if (!/^media\//.test(key)) throw new Error('bad media key');
+    await this.store.del(key);
   }
 });
 

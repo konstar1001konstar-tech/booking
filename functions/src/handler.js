@@ -6,6 +6,7 @@ const http = require('./http');
 const { loadTemplate, renderDocument } = require('./render');
 const service = require('./service');
 const { isTimerEvent } = require('./outbox');
+const { uploadPhoto } = require('./photos');
 
 const SLUG_PATH = /^\/([a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9]))$/;
 const BOOKING_ACTION = /^\/api\/admin\/bookings\/([A-Za-z0-9_-]{8,32})\/(confirm|cancel|delete)$/;
@@ -73,6 +74,12 @@ async function route(event, deps) {
 
   if (method === 'GET' && !path.startsWith('/api')) return renderPage(enriched, deps);
 
+  // Фото идут сырым (бинарным) телом, поэтому до разбора JSON.
+  if (method === 'POST' && path === '/api/admin/photos') {
+    const master = service.requireMaster(await service.sessionFrom(event, deps));
+    return http.json(200, await uploadPhoto(deps, master, enriched, query, deps.limits));
+  }
+
   let body = null;
   if (method !== 'GET' && method !== 'HEAD') body = http.readJson(event);
 
@@ -113,7 +120,7 @@ async function route(event, deps) {
   }
   if (method === 'PUT' && path === '/api/admin/profile') {
     const master = service.requireMaster(await service.sessionFrom(event, deps));
-    return http.json(200, await service.saveProfile(deps, master, body || {}));
+    return http.json(200, await service.saveProfile(deps, master, body || {}, enriched.base));
   }
   if (method === 'POST' && path === '/api/telegram/webhook') {
     return http.json(200, await service.handleWebhook(deps, enriched, body || {}));
@@ -145,7 +152,7 @@ function createHandler(deps) {
       if (err && err.code === 'bad_json') {
         return http.json(400, { ok: false, error: 'validation', message: 'Не удалось прочитать запрос.' });
       }
-      if (err && err.code === 'too_big') {
+      if (err && err.code === 'too_big' && !(err instanceof HttpError)) {
         return http.json(413, { ok: false, error: 'validation', message: 'Слишком большой запрос.' });
       }
       if (err instanceof HttpError) {

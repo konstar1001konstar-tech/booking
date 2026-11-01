@@ -16,6 +16,7 @@ class MemoryRepo {
     this.logins = new Map();
     this.botState = new Map();
     this.outbox = new Map();
+    this.media = new Map();
     this._ver = 0;
     this._chain = Promise.resolve();
   }
@@ -196,6 +197,19 @@ Object.assign(MemoryRepo.prototype, {
   deleteOutbox(id) {
     return this._lock(() => {
       this.outbox.delete(id);
+    });
+  },
+  putMedia(key, buf, type) {
+    return this._lock(() => {
+      this.media.set(key, { buf: Buffer.from(buf), type });
+    });
+  },
+  listMedia(prefix) {
+    return this._lock(() => [...this.media.keys()].filter((k) => k.startsWith(prefix)).sort());
+  },
+  deleteMedia(key) {
+    return this._lock(() => {
+      this.media.delete(key);
     });
   }
 });
