@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#fbf8f5">
+<meta name="theme-color" content="#5B3A5E">
 <meta name="description" content="Онлайн-запись к мастеру: услуги, портфолио и заявка на удобное время. Мастер подтверждает запись лично.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ru_RU">
@@ -21,81 +21,81 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="bg-milk text-[#2a2024] antialiased">
+<body class="bg-milk text-ink antialiased">
 
   <div id="loading-view" class="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
-    <p class="text-[15px] text-neutral-600">Открываем страницу…</p>
+    <p class="text-[15px] text-muted">Открываем страницу…</p>
   </div>
 
   <div id="preparing-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
-    <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
+    <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
       <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Онлайн-запись</span>
       <h1 class="display mt-4 text-[28px] leading-tight">Страница ещё готовится</h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Мастер ещё не открыл запись. Зайдите позже или попросите новую ссылку.</p>
+      <p class="mt-3 text-[15px] leading-relaxed text-muted">Мастер ещё не открыл запись. Зайдите позже или попросите новую ссылку.</p>
     </div>
   </div>
 
   <div id="admin-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
-    <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
+    <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
       <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Панель мастера</span>
       <h1 class="display mt-4 text-[28px] leading-tight">Вход через Telegram</h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Откройте бота и отправьте /start. Бот пришлёт одноразовую ссылку для входа. Она действует 10 минут.</p>
+      <p class="mt-3 text-[15px] leading-relaxed text-muted">Откройте бота и отправьте /start. Бот пришлёт одноразовую ссылку для входа. Она действует 10 минут.</p>
       <p id="admin-error" class="is-hidden mt-4 text-sm text-red-600" role="alert"></p>
     </div>
   </div>
 
   <div id="lock-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
-    <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
+    <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
       <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Умная визитка мастера</span>
       <h1 class="display mt-4 text-[28px] leading-tight">Сервис персональной онлайн-записи</h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-neutral-600">Страница открывается по короткой ссылке мастера. Клиенту её присылают лично, мастеру — ссылку для входа из Telegram-бота.</p>
-      <p class="mt-4 text-xs text-neutral-600">Если ссылка не открывается, попросите отправить её ещё раз.</p>
+      <p class="mt-3 text-[15px] leading-relaxed text-muted">Страница открывается по короткой ссылке мастера. Клиенту её присылают лично, мастеру — ссылку для входа из Telegram-бота.</p>
+      <p class="mt-4 text-xs text-muted">Если ссылка не открывается, попросите отправить её ещё раз.</p>
     </div>
   </div>
 
   <div id="broken-view" class="is-hidden mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
-    <div class="rounded-[32px] bg-white p-8 shadow-sm ring-1 ring-ios">
+    <div class="rounded-[32px] bg-surface p-8 shadow-sm ring-1 ring-ios">
       <span class="inline-block rounded-full bg-ios px-3.5 py-1 text-xs font-semibold text-tg">Онлайн-запись</span>
       <h1 class="display mt-4 text-[28px] leading-tight">Ссылка повреждена</h1>
-      <p id="broken-text" class="mt-3 text-[15px] leading-relaxed text-neutral-600">Не удалось прочитать настройки мастера. Попросите прислать актуальную ссылку на запись.</p>
+      <p id="broken-text" class="mt-3 text-[15px] leading-relaxed text-muted">Не удалось прочитать настройки мастера. Попросите прислать актуальную ссылку на запись.</p>
     </div>
   </div>
 
   <main id="app-view" class="is-hidden mx-auto max-w-md pb-[calc(36px+env(safe-area-inset-bottom))]">
-    <header>
+    <header class="hero-grad">
       <div class="relative">
         <img id="master-photo" width="780" height="960" fetchpriority="high" alt=""
-             class="h-[48dvh] max-h-[420px] min-h-[290px] w-full rounded-b-[36px] bg-ios object-cover shadow-sm"
-             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 120'%3E%3Crect width='96' height='120' fill='rgb(236,222,218)'/%3E%3Ccircle cx='48' cy='46' r='17' fill='rgb(206,182,180)'/%3E%3Cpath d='M14 120c0-26 15-42 34-42s34 16 34 42z' fill='rgb(206,182,180)'/%3E%3C/svg%3E">
+             class="h-[48dvh] max-h-[420px] min-h-[290px] w-full rounded-b-[36px] bg-hero object-cover shadow-sm"
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 120'%3E%3Ccircle cx='48' cy='46' r='17' fill='rgba(0,0,0,0.10)'/%3E%3Cpath d='M14 120c0-26 15-42 34-42s34 16 34 42z' fill='rgba(0,0,0,0.10)'/%3E%3C/svg%3E">
       </div>
       <div class="rise px-6 pt-6 text-center">
         <h1 id="master-name" class="display text-[32px] leading-tight"></h1>
-        <p id="master-desc" class="mt-2 text-[16px] text-neutral-600"></p>
-        <p id="draft-note" class="is-hidden mt-3 text-sm text-neutral-600">Страница ещё не открыта клиентам. Заполните услуги и сохраните профиль.</p>
-        <p class="mt-4 inline-flex rounded-full bg-white px-3.5 py-1.5 text-sm text-neutral-600 shadow-sm ring-1 ring-ios/60">Это заявка — мастер подтвердит время</p>
+        <p id="master-desc" class="mt-2 text-[16px] text-muted"></p>
+        <p id="draft-note" class="is-hidden mt-3 text-sm text-muted">Страница ещё не открыта клиентам. Заполните услуги и сохраните профиль.</p>
+        <p class="mt-4 inline-flex rounded-full bg-surface px-3.5 py-1.5 text-sm text-muted shadow-sm ring-1 ring-ios/60">Это заявка — мастер подтвердит время</p>
       </div>
     </header>
 
     <section id="gallery" class="rise rise-1 is-hidden mt-8" aria-labelledby="gallery-title">
       <div class="flex items-baseline justify-between px-6 pb-3">
         <h2 id="gallery-title" class="display text-[22px]">Портфолио</h2>
-        <span id="gallery-count" class="text-xs font-medium text-neutral-600">Нажмите на фото для увеличения</span>
+        <span id="gallery-count" class="text-xs font-medium text-muted">Нажмите на фото для увеличения</span>
       </div>
       <div id="gallery-list" class="no-scrollbar flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-6 pb-2"></div>
     </section>
 
     <section class="rise rise-2 mt-7 px-4" aria-labelledby="services-title">
       <h2 id="services-title" class="display px-2 pb-3 text-[22px]" tabindex="-1">Услуги и запись</h2>
-      <div id="services" class="divide-y divide-ios rounded-3xl bg-white px-5 shadow-sm ring-1 ring-ios/50"></div>
+      <div id="services" class="divide-y divide-ios rounded-3xl bg-surface px-5 shadow-sm ring-1 ring-ios/50"></div>
     </section>
 
     <section id="address-sec" class="rise rise-3 is-hidden mt-6 px-4" aria-labelledby="address-title">
-      <div class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ios/50">
+      <div class="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-ios/50">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 id="address-title" class="text-xs font-semibold uppercase tracking-wider text-neutral-600">Адрес приёма</h2>
-            <p id="master-address" class="mt-1 text-[16px] font-medium text-[#2a2024]"></p>
-            <p id="master-route-hint" class="mt-1 text-sm text-neutral-600"></p>
+            <h2 id="address-title" class="text-xs font-semibold uppercase tracking-wider text-muted">Адрес приёма</h2>
+            <p id="master-address" class="mt-1 text-[16px] font-medium text-ink"></p>
+            <p id="master-route-hint" class="mt-1 text-sm text-muted"></p>
           </div>
           <a id="map-link" href="#" target="_blank" rel="noopener noreferrer"
              class="shrink-0 rounded-2xl bg-ios px-3.5 py-2.5 text-xs font-semibold text-tg">На карте ↗</a>
@@ -104,7 +104,7 @@
     </section>
 
     <button id="open-settings" type="button"
-            class="is-hidden mx-auto mt-10 block rounded-full bg-white px-5 py-2.5 text-sm font-medium text-tg shadow-sm ring-1 ring-ios">
+            class="is-hidden mx-auto mt-10 block rounded-full bg-surface px-5 py-2.5 text-sm font-medium text-tg shadow-sm ring-1 ring-ios">
       Настроить профиль (режим мастера)
     </button>
   </main>
@@ -121,7 +121,7 @@
     <div id="lb-track" class="no-scrollbar flex flex-1 snap-x snap-mandatory items-center overflow-x-auto"></div>
     <div class="px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3 text-center">
       <button id="lb-book" type="button"
-              class="mx-auto w-full max-w-xs rounded-2xl bg-tg py-3.5 text-sm font-semibold text-white shadow-lg">
+              class="mx-auto w-full max-w-xs rounded-2xl bg-tg active:bg-tg-dark py-3.5 text-sm font-semibold text-ontg shadow-lg">
         Выбрать услугу
       </button>
     </div>
@@ -130,52 +130,52 @@
   <div id="modal" class="modal fixed inset-0 z-50" aria-hidden="true" inert>
     <div class="backdrop absolute inset-0 bg-black/40" data-close></div>
     <section id="sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="sheet-title"
-             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-white outline-none">
+             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-surface outline-none">
       <div id="form-view" class="overflow-y-auto px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
-        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-line"></div>
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 id="sheet-title" class="text-xl font-semibold">Заявка на приём</h2>
-            <p id="sheet-service" class="mt-0.5 text-sm text-neutral-600"></p>
+            <p id="sheet-service" class="mt-0.5 text-sm text-muted"></p>
           </div>
           <button type="button" data-close aria-label="Закрыть"
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-neutral-600">
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-muted">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg>
           </button>
         </div>
 
         <div class="mt-6 flex items-baseline justify-between gap-3">
-          <h3 class="text-sm font-medium text-neutral-600">Дата</h3>
-          <span id="month" class="text-right text-sm text-neutral-600"></span>
+          <h3 class="text-sm font-medium text-muted">Дата</h3>
+          <span id="month" class="text-right text-sm text-muted"></span>
         </div>
         <div id="dates" class="no-scrollbar -mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-1"></div>
 
-        <h3 class="mt-6 text-sm font-medium text-neutral-600">Время</h3>
+        <h3 class="mt-6 text-sm font-medium text-muted">Время</h3>
         <div id="slots" class="mt-2 grid grid-cols-4 gap-2"></div>
-        <p class="mt-2 text-sm text-neutral-600">Это заявка — мастер подтвердит время. Уже занятые окна отмечены.</p>
+        <p class="mt-2 text-sm text-muted">Это заявка — мастер подтвердит время. Уже занятые окна отмечены.</p>
         <p id="slot-err" class="is-hidden mt-1.5 text-sm text-red-600">Выберите время</p>
 
         <label class="mt-6 block" for="name">
-          <span class="text-sm font-medium text-neutral-600">Ваше имя</span>
+          <span class="text-sm font-medium text-muted">Ваше имя</span>
           <input id="name" type="text" autocomplete="name" placeholder="Например, Мария" aria-describedby="name-err"
                  class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
         <p id="name-err" class="is-hidden mt-1.5 text-sm text-red-600">Введите ваше имя (минимум 2 буквы)</p>
 
         <label class="mt-4 block" for="phone">
-          <span class="text-sm font-medium text-neutral-600">Номер телефона</span>
+          <span class="text-sm font-medium text-muted">Номер телефона</span>
           <input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="22" placeholder="+7 (999) 123-45-67" aria-describedby="phone-hint phone-err"
                  class="mt-2 w-full rounded-xl bg-ios px-4 py-3.5 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
-        <p id="phone-hint" class="mt-1.5 text-xs text-neutral-600">Для номера другой страны начните с + и кода.</p>
+        <p id="phone-hint" class="mt-1.5 text-xs text-muted">Для номера другой страны начните с + и кода.</p>
         <p id="phone-err" class="is-hidden mt-1.5 text-sm text-red-600">Введите телефон полностью, вместе с кодом страны</p>
 
         <div class="mt-6">
           <div class="flex items-start gap-3">
             <input id="consent" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 rounded accent-tg">
-            <label for="consent" class="text-xs leading-snug text-neutral-600">Я даю согласие на обработку персональных данных для заявки на услугу.</label>
+            <label for="consent" class="text-xs leading-snug text-muted">Я даю согласие на обработку персональных данных для заявки на услугу.</label>
           </div>
-          <p class="mt-2 pl-8 text-xs leading-snug text-neutral-600">
+          <p class="mt-2 pl-8 text-xs leading-snug text-muted">
             <button id="open-consent" type="button" class="font-medium text-tg underline underline-offset-2">Текст согласия</button>
             <span aria-hidden="true"> · </span>
             <button id="open-policy" type="button" class="font-medium text-tg underline underline-offset-2">Политика конфиденциальности</button>
@@ -184,31 +184,31 @@
         <p id="consent-err" class="is-hidden mt-1.5 text-sm text-red-600">Отметьте согласие на обработку данных</p>
 
         <button id="confirm" type="button" disabled
-                class="mt-4 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                class="mt-4 w-full rounded-2xl bg-tg active:bg-tg-dark py-4 text-base font-semibold text-ontg disabled:cursor-not-allowed disabled:opacity-50">
           Отправить заявку
         </button>
         <div id="send-fallback" class="is-hidden mt-3 space-y-2" role="alert"></div>
       </div>
 
       <div id="done-view" class="is-hidden overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-8 text-center">
-        <svg class="mx-auto" width="80" height="80" viewBox="0 0 56 56" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle class="check-circle" cx="28" cy="28" r="26" stroke="#34c759" stroke-width="3"/>
-          <path class="check-mark" d="M17 29l8 8 14-16" stroke="#34c759" stroke-width="3.5"/>
+        <svg class="mx-auto text-tg" width="80" height="80" viewBox="0 0 56 56" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle class="check-circle" cx="28" cy="28" r="26" stroke="currentColor" stroke-width="3"/>
+          <path class="check-mark" d="M17 29l8 8 14-16" stroke="currentColor" stroke-width="3.5"/>
         </svg>
         <h2 class="mt-4 text-2xl font-semibold">Заявка отправлена</h2>
-        <p id="done-text" class="mt-1.5 text-[16px] text-neutral-600"></p>
+        <p id="done-text" class="mt-1.5 text-[16px] text-muted"></p>
         <dl class="mt-5 space-y-2.5 rounded-2xl bg-ios p-4 text-left text-[15px]">
-          <div class="flex justify-between gap-4"><dt class="text-neutral-600">Услуга</dt><dd id="sum-service" class="text-right font-medium"></dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-neutral-600">Дата</dt><dd id="sum-date" class="text-right font-medium"></dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-neutral-600">Время</dt><dd id="sum-time" class="text-right font-medium"></dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-neutral-600">Стоимость</dt><dd id="sum-price" class="text-right font-medium"></dd></div>
-          <div id="sum-addr-row" class="is-hidden flex justify-between gap-4 border-t border-neutral-200/80 pt-2"><dt class="text-neutral-600">Адрес</dt><dd id="sum-addr" class="text-right font-medium"></dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-muted">Услуга</dt><dd id="sum-service" class="text-right font-medium"></dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-muted">Дата</dt><dd id="sum-date" class="text-right font-medium"></dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-muted">Время</dt><dd id="sum-time" class="text-right font-medium"></dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-muted">Стоимость</dt><dd id="sum-price" class="text-right font-medium"></dd></div>
+          <div id="sum-addr-row" class="is-hidden flex justify-between gap-4 border-t border-line pt-2"><dt class="text-muted">Адрес</dt><dd id="sum-addr" class="text-right font-medium"></dd></div>
         </dl>
         <button id="cal-btn" type="button" class="mt-4 w-full rounded-2xl bg-ios py-3.5 text-sm font-semibold text-tg">Добавить напоминание в календарь</button>
         <a id="gcal-link" href="https://calendar.google.com/calendar/render" target="_blank" rel="noopener noreferrer"
-           class="mt-2.5 block w-full rounded-2xl bg-white py-3.5 text-sm font-semibold text-tg ring-1 ring-ios">Открыть в Google Календаре</a>
-        <p id="tg-cal-note" class="is-hidden mt-2 text-xs leading-snug text-neutral-600">В Telegram файл календаря часто не скачивается. Откройте запись в Google Календаре — напоминание можно поставить там.</p>
-        <button id="done-btn" type="button" class="mt-2.5 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white">Готово</button>
+           class="mt-2.5 block w-full rounded-2xl bg-surface py-3.5 text-sm font-semibold text-tg ring-1 ring-ios">Открыть в Google Календаре</a>
+        <p id="tg-cal-note" class="is-hidden mt-2 text-xs leading-snug text-muted">В Telegram файл календаря часто не скачивается. Откройте запись в Google Календаре — напоминание можно поставить там.</p>
+        <button id="done-btn" type="button" class="mt-2.5 w-full rounded-2xl bg-tg active:bg-tg-dark py-4 text-base font-semibold text-ontg">Готово</button>
       </div>
     </section>
   </div>
@@ -216,14 +216,14 @@
   <div id="legal" class="modal fixed inset-0 z-[60]" aria-hidden="true" inert>
     <div class="backdrop absolute inset-0 bg-black/40" data-close-legal></div>
     <section id="legal-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="legal-title"
-             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-3xl bg-white outline-none">
+             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-3xl bg-surface outline-none">
       <div class="px-5 pt-3">
-        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-line"></div>
         <h2 id="legal-title" class="text-xl font-semibold"></h2>
       </div>
-      <div id="legal-body" class="space-y-3 overflow-y-auto px-5 pb-4 pt-3 text-[14px] leading-relaxed text-neutral-700"></div>
+      <div id="legal-body" class="space-y-3 overflow-y-auto px-5 pb-4 pt-3 text-[14px] leading-relaxed text-muted"></div>
       <div class="px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-2">
-        <button id="legal-close" type="button" data-close-legal class="w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white">Понятно</button>
+        <button id="legal-close" type="button" data-close-legal class="w-full rounded-2xl bg-tg active:bg-tg-dark py-4 text-base font-semibold text-ontg">Понятно</button>
       </div>
     </section>
   </div>
@@ -231,39 +231,39 @@
   <div id="panel" class="modal fixed inset-0 z-50" aria-hidden="true" inert>
     <div class="backdrop absolute inset-0 bg-black/40" data-close></div>
     <section id="panel-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="panel-title"
-             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-white outline-none">
+             class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-surface outline-none">
       <div class="overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3">
-        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300"></div>
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-line"></div>
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 id="panel-title" class="text-xl font-semibold">Конструктор визитки</h2>
-            <p class="mt-0.5 text-sm text-neutral-600">Профиль хранится на сервере. Ссылка для клиентов короткая.</p>
+            <p class="mt-0.5 text-sm text-muted">Профиль хранится на сервере. Ссылка для клиентов короткая.</p>
             <button id="p-logout" type="button" class="mt-2 text-sm font-medium text-tg">Выйти</button>
           </div>
           <button type="button" data-close aria-label="Закрыть"
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-neutral-600">
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ios text-muted">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg>
           </button>
         </div>
 
         <div id="bookings-block" class="mt-5">
-          <h3 class="text-sm font-medium text-neutral-600">Заявки</h3>
+          <h3 class="text-sm font-medium text-muted">Заявки</h3>
           <div id="booking-list" class="mt-2 space-y-2 text-sm"></div>
         </div>
 
         <label class="mt-5 block" for="p-name">
-          <span class="text-sm font-medium text-neutral-600">Имя и специализация</span>
+          <span class="text-sm font-medium text-muted">Имя и специализация</span>
           <input id="p-name" type="text" maxlength="60" placeholder="Имя | специализация"
                  class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
         <label class="mt-4 block" for="p-desc">
-          <span class="text-sm font-medium text-neutral-600">Короткое описание</span>
+          <span class="text-sm font-medium text-muted">Короткое описание</span>
           <input id="p-desc" type="text" maxlength="120" placeholder="Как вы работаете"
                  class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
         </label>
-        <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="mt-4">
           <label class="block" for="p-cat">
-            <span class="text-sm font-medium text-neutral-600">Категория</span>
+            <span class="text-sm font-medium text-muted">Категория</span>
             <select id="p-cat" class="mt-1.5 w-full rounded-xl bg-ios px-3 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
               <option value="manicure">Маникюр</option>
               <option value="massage">Массаж</option>
@@ -271,20 +271,69 @@
               <option value="other">Другое</option>
             </select>
           </label>
-          <label class="block" for="p-theme">
-            <span class="text-sm font-medium text-neutral-600">Цвет кнопок</span>
-            <select id="p-theme" class="mt-1.5 w-full rounded-xl bg-ios px-3 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
-              <option value="plum">Слива</option>
-              <option value="rose">Роза</option>
-              <option value="wine">Вино</option>
-              <option value="olive">Олива</option>
-              <option value="sand">Песок</option>
-              <option value="ink">Чернила</option>
-            </select>
-          </label>
         </div>
+        <fieldset class="mt-5">
+          <legend class="text-sm font-medium text-muted">Цвет оформления</legend>
+          <input id="p-theme" type="hidden" value="plum">
+          <div id="p-theme-list" role="radiogroup" aria-label="Цвет оформления" class="mt-2 grid grid-cols-3 gap-2">
+            <button type="button" role="radio" aria-checked="false" data-theme="plum" class="theme-plum flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Слива</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="rose" class="theme-rose flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Роза</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="wine" class="theme-wine flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Вино</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="peach" class="theme-peach flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Персик</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="sand" class="theme-sand flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Песок</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="olive" class="theme-olive flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Олива</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="mint" class="theme-mint flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Мята</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="ocean" class="theme-ocean flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Океан</span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="ink" class="theme-ink flex min-h-[44px] items-center gap-2 rounded-xl bg-ios px-2.5 py-2 text-left text-sm font-medium text-ink ring-2 ring-transparent aria-checked:ring-tg">
+              <span class="h-6 w-6 shrink-0 rounded-full bg-tg shadow-sm ring-2 ring-surface" aria-hidden="true"></span><span class="truncate">Графит</span>
+            </button>
+          </div>
+          <div id="p-theme-preview" class="mt-3 overflow-hidden rounded-2xl bg-milk ring-1 ring-line" aria-hidden="true">
+            <div class="hero-grad px-4 pb-3 pt-4">
+              <div class="flex items-center gap-3">
+                <span class="h-10 w-10 shrink-0 rounded-full bg-hero ring-2 ring-surface"></span>
+                <div class="min-w-0">
+                  <p id="p-theme-preview-name" class="display truncate text-[17px] text-ink">Ваша визитка</p>
+                  <p class="text-xs text-muted">Так страницу увидят клиенты</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-surface px-4 py-3">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <p class="text-sm font-medium text-ink">Маникюр</p>
+                  <p class="text-xs text-muted">1 500 ₽ · 1 ч</p>
+                </div>
+                <span class="rounded-full bg-tg px-3 py-1.5 text-xs font-semibold text-ontg">Записаться</span>
+              </div>
+              <div class="mt-3 flex gap-1.5 text-xs font-medium">
+                <span class="rounded-lg bg-ios px-2.5 py-1.5 text-ink">10:00</span>
+                <span class="rounded-lg bg-tg px-2.5 py-1.5 text-ontg">12:00</span>
+                <span class="rounded-lg bg-ios px-2.5 py-1.5 text-ink">14:00</span>
+                <span class="ml-auto self-center text-tg">На карте ↗</span>
+              </div>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-muted">Цвет сразу меняется на всей странице и в настройках. Клиенты увидят его после «Сохранить профиль».</p>
+        </fieldset>
         <label class="mt-4 block" for="p-tz">
-          <span class="text-sm font-medium text-neutral-600">Часовой пояс приёма</span>
+          <span class="text-sm font-medium text-muted">Часовой пояс приёма</span>
           <select id="p-tz" class="mt-1.5 w-full rounded-xl bg-ios px-3 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
             <option value="Europe/Kaliningrad">Калининград</option>
             <option value="Europe/Moscow">Москва</option>
@@ -300,11 +349,11 @@
           </select>
         </label>
         <div class="mt-4">
-          <span class="text-sm font-medium text-neutral-600">Главное фото профиля</span>
+          <span class="text-sm font-medium text-muted">Главное фото профиля</span>
           <div class="mt-1.5 flex items-center gap-3">
             <div class="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-ios">
               <img id="p-photo-preview" alt="Главное фото" class="is-hidden h-full w-full object-cover">
-              <span id="p-photo-empty" class="absolute inset-0 flex items-center justify-center text-xs text-neutral-600">Нет фото</span>
+              <span id="p-photo-empty" class="absolute inset-0 flex items-center justify-center text-xs text-muted">Нет фото</span>
             </div>
             <div class="flex min-w-0 flex-1 flex-col gap-2">
               <label class="block w-full cursor-pointer rounded-xl bg-tg/10 py-3 text-center text-[15px] font-semibold text-tg">
@@ -314,133 +363,133 @@
               <button id="p-photo-remove" type="button" class="is-hidden w-full rounded-xl py-2 text-sm font-medium text-red-600">Убрать фото</button>
             </div>
           </div>
-          <p id="p-photo-status" class="is-hidden mt-1.5 text-xs text-neutral-600" role="status"></p>
+          <p id="p-photo-status" class="is-hidden mt-1.5 text-xs text-muted" role="status"></p>
           <details class="mt-2">
-            <summary class="cursor-pointer text-xs text-neutral-600">или вставить ссылку на фото</summary>
+            <summary class="cursor-pointer text-xs text-muted">или вставить ссылку на фото</summary>
             <input id="p-photo" type="url" inputmode="url" placeholder="https://..." aria-label="Ссылка на главное фото"
                    class="mt-1.5 w-full rounded-xl bg-ios px-4 py-3 text-base outline-none ring-2 ring-transparent focus:ring-tg/40">
           </details>
         </div>
         <div class="mt-4 grid grid-cols-1 gap-3 rounded-2xl bg-ios/60 p-3.5">
           <label class="block" for="p-addr">
-            <span class="text-sm font-medium text-neutral-600">Адрес студии / кабинета</span>
+            <span class="text-sm font-medium text-muted">Адрес студии / кабинета</span>
             <input id="p-addr" type="text" maxlength="100" placeholder="Улица, дом, кабинет"
-                   class="mt-1.5 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1.5 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
           <label class="block" for="p-hint">
-            <span class="text-xs font-medium text-neutral-600">Как найти</span>
+            <span class="text-xs font-medium text-muted">Как найти</span>
             <input id="p-hint" type="text" maxlength="120" placeholder="Этаж, домофон, вход"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
         </div>
 
         <div class="mt-4 grid grid-cols-1 gap-3 rounded-2xl bg-ios/60 p-3.5">
-          <p class="text-sm font-medium text-neutral-600">Контакты, если заявка не уйдёт с сайта</p>
+          <p class="text-sm font-medium text-muted">Контакты, если заявка не уйдёт с сайта</p>
           <label class="block" for="p-phone">
-            <span class="text-xs font-medium text-neutral-600">Телефон мастера</span>
+            <span class="text-xs font-medium text-muted">Телефон мастера</span>
             <input id="p-phone" type="tel" maxlength="24" placeholder="+7 999 123-45-67"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
           <label class="block" for="p-telegram">
-            <span class="text-xs font-medium text-neutral-600">Telegram</span>
+            <span class="text-xs font-medium text-muted">Telegram</span>
             <input id="p-telegram" type="text" maxlength="80" placeholder="@username или https://t.me/username"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
           <label class="block" for="p-whatsapp">
-            <span class="text-xs font-medium text-neutral-600">WhatsApp (номер)</span>
+            <span class="text-xs font-medium text-muted">WhatsApp (номер)</span>
             <input id="p-whatsapp" type="tel" maxlength="24" placeholder="79991234567"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
         </div>
 
-        <p class="mt-4 text-xs leading-snug text-neutral-600">Уведомления о заявках приходят в Telegram, с которого вы вошли. Номер чата с этой страницы не отправляется.</p>
+        <p class="mt-4 text-xs leading-snug text-muted">Уведомления о заявках приходят в Telegram, с которого вы вошли. Номер чата с этой страницы не отправляется.</p>
 
         <div class="mt-4">
           <div class="flex items-baseline justify-between">
-            <span class="text-sm font-medium text-neutral-600">Портфолио</span>
-            <span id="p-gallery-count" class="text-xs text-neutral-600">0 из 12</span>
+            <span class="text-sm font-medium text-muted">Портфолио</span>
+            <span id="p-gallery-count" class="text-xs text-muted">0 из 12</span>
           </div>
           <div id="p-gallery-grid" class="mt-1.5 grid grid-cols-3 gap-2"></div>
           <label id="p-gallery-add" class="mt-2 block w-full cursor-pointer rounded-xl bg-tg/10 py-3 text-center text-[15px] font-semibold text-tg">
             <input id="p-gallery-file" type="file" accept="image/*" multiple class="sr-only">
             <span id="p-gallery-btn">+ Добавить фото из галереи</span>
           </label>
-          <p id="p-gallery-status" class="is-hidden mt-1.5 text-xs text-neutral-600" role="status"></p>
+          <p id="p-gallery-status" class="is-hidden mt-1.5 text-xs text-muted" role="status"></p>
           <details class="mt-2">
-            <summary class="cursor-pointer text-xs text-neutral-600">или вставить ссылки (с новой строки)</summary>
+            <summary class="cursor-pointer text-xs text-muted">или вставить ссылки (с новой строки)</summary>
             <textarea id="p-gallery" rows="3" placeholder="https://..." aria-label="Ссылки на фото портфолио"
                       class="mt-1.5 w-full resize-none rounded-xl bg-ios px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40"></textarea>
           </details>
-          <p class="mt-1.5 text-xs text-neutral-600">Фото появятся на странице после «Сохранить».</p>
+          <p class="mt-1.5 text-xs text-muted">Фото появятся на странице после «Сохранить».</p>
         </div>
 
-        <h3 class="mt-6 text-sm font-medium text-neutral-600">Прайс-лист и услуги</h3>
+        <h3 class="mt-6 text-sm font-medium text-muted">Прайс-лист и услуги</h3>
         <div id="svc-list" class="mt-2 space-y-2"></div>
         <button id="svc-add" type="button" class="mt-2 w-full rounded-xl bg-tg/10 py-3 text-[15px] font-semibold text-tg">+ Добавить услугу</button>
 
         <fieldset class="mt-6 rounded-2xl bg-ios/60 p-3.5">
-          <legend class="px-1 text-sm font-medium text-neutral-600">График приёма</legend>
-          <p class="text-xs text-neutral-600">Дни, горизонт и часы сохраняются в профиле. Занятые слоты клиент видит по уже сохранённым заявкам.</p>
+          <legend class="px-1 text-sm font-medium text-muted">График приёма</legend>
+          <p class="text-xs text-muted">Дни, горизонт и часы сохраняются в профиле. Занятые слоты клиент видит по уже сохранённым заявкам.</p>
           <div id="p-days" class="mt-3 flex flex-wrap gap-2"></div>
           <label class="mt-3 block" for="p-horizon">
-            <span class="text-xs font-medium text-neutral-600">На сколько дней вперёд открыта запись</span>
+            <span class="text-xs font-medium text-muted">На сколько дней вперёд открыта запись</span>
             <input id="p-horizon" type="number" min="1" max="60" inputmode="numeric"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
           <label class="mt-3 block" for="p-slots">
-            <span class="text-xs font-medium text-neutral-600">Часы приёма (слоты через запятую)</span>
+            <span class="text-xs font-medium text-muted">Часы приёма (слоты через запятую)</span>
             <input id="p-slots" type="text" placeholder="10:00, 12:30, 15:00, 18:00"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
         </fieldset>
 
         <fieldset class="mt-4 rounded-2xl bg-ios/60 p-3.5">
-          <legend class="px-1 text-sm font-medium text-neutral-600">Данные оператора для политики и согласия</legend>
+          <legend class="px-1 text-sm font-medium text-muted">Данные оператора для политики и согласия</legend>
           <label class="mt-2 block" for="p-legal-name">
-            <span class="text-xs font-medium text-neutral-600">ФИО</span>
+            <span class="text-xs font-medium text-muted">ФИО</span>
             <input id="p-legal-name" type="text" maxlength="120" placeholder="Фамилия Имя Отчество"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
           <label class="mt-3 block" for="p-legal-status">
-            <span class="text-xs font-medium text-neutral-600">Статус</span>
-            <select id="p-legal-status" class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+            <span class="text-xs font-medium text-muted">Статус</span>
+            <select id="p-legal-status" class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
               <option value="">Не указан</option>
               <option value="ip">ИП</option>
               <option value="self">Самозанятый</option>
             </select>
           </label>
           <label class="mt-3 block" for="p-inn">
-            <span class="text-xs font-medium text-neutral-600">ИНН</span>
+            <span class="text-xs font-medium text-muted">ИНН</span>
             <input id="p-inn" type="text" inputmode="numeric" maxlength="12" placeholder="10 или 12 цифр"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
           <label class="mt-3 block" for="p-revoke">
-            <span class="text-xs font-medium text-neutral-600">Контакт для отзыва согласия</span>
+            <span class="text-xs font-medium text-muted">Контакт для отзыва согласия</span>
             <input id="p-revoke" type="text" maxlength="120" placeholder="Телефон, почта или @telegram"
-                   class="mt-1 w-full rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
+                   class="mt-1 w-full rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40">
           </label>
         </fieldset>
 
         <div class="mt-5 flex items-start gap-2.5 rounded-xl bg-ios/70 p-3">
           <input id="p-legal" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-tg">
-          <label for="p-legal" class="text-xs leading-snug text-neutral-600">Я подтверждаю, что обладаю правами на размещаемые фотографии работ, самостоятельно выступаю оператором персональных данных своих клиентов (152-ФЗ) и освобождаю разработчика шаблона от претензий третьих лиц.</label>
+          <label for="p-legal" class="text-xs leading-snug text-muted">Я подтверждаю, что обладаю правами на размещаемые фотографии работ, самостоятельно выступаю оператором персональных данных своих клиентов (152-ФЗ) и освобождаю разработчика шаблона от претензий третьих лиц.</label>
         </div>
 
         <p id="panel-err" class="is-hidden mt-3 text-sm text-red-600" role="alert"></p>
-        <button id="p-save" type="button" class="mt-4 w-full rounded-2xl bg-tg py-4 text-base font-semibold text-white">Сохранить профиль</button>
+        <button id="p-save" type="button" class="mt-4 w-full rounded-2xl bg-tg active:bg-tg-dark py-4 text-base font-semibold text-ontg">Сохранить профиль</button>
 
         <div id="link-block" class="is-hidden mt-6 rounded-2xl bg-ios p-4">
           <h3 class="text-sm font-semibold text-tg">Готовая ссылка для клиентов</h3>
-          <textarea id="p-link" readonly rows="4" class="mt-2 w-full resize-none break-all rounded-xl bg-white p-3 text-xs text-neutral-600 outline-none"></textarea>
-          <button id="p-copy" type="button" class="mt-2 w-full rounded-xl bg-tg py-3 text-[15px] font-semibold text-white">Скопировать клиентскую ссылку</button>
-          <p class="mt-2 text-xs text-neutral-600">Разместите ссылку в шапке профиля или отправьте клиенту.</p>
+          <textarea id="p-link" readonly rows="4" class="mt-2 w-full resize-none break-all rounded-xl bg-surface p-3 text-xs text-muted outline-none"></textarea>
+          <button id="p-copy" type="button" class="mt-2 w-full rounded-xl bg-tg active:bg-tg-dark py-3 text-[15px] font-semibold text-ontg">Скопировать клиентскую ссылку</button>
+          <p class="mt-2 text-xs text-muted">Разместите ссылку в шапке профиля или отправьте клиенту.</p>
         </div>
       </div>
     </section>
   </div>
 
   <noscript>
-    <p class="mx-auto max-w-md px-6 py-12 text-center text-[15px] text-neutral-600">Для онлайн-записи нужен JavaScript.</p>
+    <p class="mx-auto max-w-md px-6 py-12 text-center text-[15px] text-muted">Для онлайн-записи нужен JavaScript.</p>
   </noscript>
 
 <script src="/calendar.js"></script>

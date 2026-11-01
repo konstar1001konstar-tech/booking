@@ -3,13 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --c-tg: 91 58 94;
-    --c-ios: 243 233 230;
-    --c-milk: 251 248 245;
-  }
-
   body {
+    background-color: rgb(var(--c-milk));
+    color: rgb(var(--c-ink));
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
@@ -17,12 +13,129 @@
   button { -webkit-appearance: none; }
 }
 
-.theme-plum { --c-tg: 91 58 94; }
-.theme-rose { --c-tg: 158 78 98; }
-.theme-wine { --c-tg: 122 46 74; }
-.theme-olive { --c-tg: 90 107 74; }
-.theme-sand { --c-tg: 138 90 58; }
-.theme-ink { --c-tg: 54 58 72; }
+/* Темы оформления. Цвет, выбранный мастером (profile.theme), задаёт всю
+   палитру: страницу клиента, окно записи и панель настроек. Утилиты Tailwind
+   (bg-tg, text-muted, bg-surface, ring-line …) читают эти переменные.
+   Контраст проверяет functions/test/themes.test.js (WCAG AA). */
+:root,
+.theme-plum {
+  --c-tg: 91 58 94;
+  --c-tg-dark: 69 42 72;
+  --c-on-tg: 255 255 255;
+  --c-ios: 243 233 230;
+  --c-milk: 251 248 245;
+  --c-surface: 255 255 255;
+  --c-ink: 42 32 36;
+  --c-muted: 94 82 88;
+  --c-line: 230 217 218;
+  --c-hero: 234 219 226;
+}
+.theme-rose {
+  --c-tg: 154 74 94;
+  --c-tg-dark: 124 58 75;
+  --c-on-tg: 255 255 255;
+  --c-ios: 246 231 234;
+  --c-milk: 253 248 248;
+  --c-surface: 255 255 255;
+  --c-ink: 46 31 36;
+  --c-muted: 99 80 90;
+  --c-line: 237 216 221;
+  --c-hero: 243 216 223;
+}
+.theme-wine {
+  --c-tg: 122 46 74;
+  --c-tg-dark: 94 34 57;
+  --c-on-tg: 255 255 255;
+  --c-ios: 242 228 232;
+  --c-milk: 251 246 247;
+  --c-surface: 255 255 255;
+  --c-ink: 43 26 33;
+  --c-muted: 96 78 86;
+  --c-line: 232 211 218;
+  --c-hero: 235 210 219;
+}
+.theme-olive {
+  --c-tg: 86 103 63;
+  --c-tg-dark: 67 81 49;
+  --c-on-tg: 255 255 255;
+  --c-ios: 236 238 227;
+  --c-milk: 249 249 244;
+  --c-surface: 255 255 255;
+  --c-ink: 35 39 30;
+  --c-muted: 82 90 74;
+  --c-line: 221 225 210;
+  --c-hero: 222 229 209;
+}
+.theme-sand {
+  --c-tg: 134 86 58;
+  --c-tg-dark: 107 68 45;
+  --c-on-tg: 255 255 255;
+  --c-ios: 243 234 224;
+  --c-milk: 251 247 242;
+  --c-surface: 255 255 255;
+  --c-ink: 45 34 25;
+  --c-muted: 95 82 71;
+  --c-line: 232 220 205;
+  --c-hero: 239 222 202;
+}
+.theme-ink {
+  --c-tg: 54 58 72;
+  --c-tg-dark: 37 40 51;
+  --c-on-tg: 255 255 255;
+  --c-ios: 235 236 239;
+  --c-milk: 247 247 249;
+  --c-surface: 255 255 255;
+  --c-ink: 30 32 39;
+  --c-muted: 82 85 95;
+  --c-line: 220 222 227;
+  --c-hero: 220 223 230;
+}
+.theme-peach {
+  --c-tg: 169 80 47;
+  --c-tg-dark: 138 63 35;
+  --c-on-tg: 255 255 255;
+  --c-ios: 251 234 225;
+  --c-milk: 255 248 244;
+  --c-surface: 255 255 255;
+  --c-ink: 47 31 24;
+  --c-muted: 100 81 74;
+  --c-line: 241 218 207;
+  --c-hero: 248 216 198;
+}
+.theme-mint {
+  --c-tg: 45 116 100;
+  --c-tg-dark: 33 90 77;
+  --c-on-tg: 255 255 255;
+  --c-ios: 226 241 236;
+  --c-milk: 246 251 249;
+  --c-surface: 255 255 255;
+  --c-ink: 23 40 42;
+  --c-muted: 73 92 87;
+  --c-line: 205 228 221;
+  --c-hero: 203 233 223;
+}
+.theme-ocean {
+  --c-tg: 44 94 136;
+  --c-tg-dark: 32 72 106;
+  --c-on-tg: 255 255 255;
+  --c-ios: 227 236 245;
+  --c-milk: 246 249 252;
+  --c-surface: 255 255 255;
+  --c-ink: 23 35 49;
+  --c-muted: 74 87 103;
+  --c-line: 209 222 234;
+  --c-hero: 205 223 239;
+}
+
+/* Плавная смена темы без мигания картинок. */
+html.theme-anim body, html.theme-anim body * {
+  transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease, fill .25s ease, stroke .25s ease;
+}
+
+.hero-grad { background: linear-gradient(180deg, rgb(var(--c-hero)) 0%, rgb(var(--c-hero) / 0.55) 55%, rgb(var(--c-milk)) 100%); }
+::selection { background: rgb(var(--c-tg) / 0.22); }
+:focus-visible { outline: 2px solid rgb(var(--c-tg) / 0.55); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
 
 .is-hidden { display: none !important; }
 body.scroll-lock { overflow: hidden; }
@@ -55,8 +168,8 @@ body.scroll-lock { overflow: hidden; }
 
 .day-off,
 .slot-off {
-  background-image: repeating-linear-gradient(-45deg, transparent, transparent 5px, rgba(42, 32, 36, 0.10) 5px, rgba(42, 32, 36, 0.10) 6px);
-  color: #3f3834;
+  background-image: repeating-linear-gradient(-45deg, transparent, transparent 5px, rgb(var(--c-ink) / 0.10) 5px, rgb(var(--c-ink) / 0.10) 6px);
+  color: rgb(var(--c-muted));
   cursor: not-allowed;
   opacity: 1;
   text-decoration: none;

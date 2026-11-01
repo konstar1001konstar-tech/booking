@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { escapeHtml } = require('./lib/html');
+const { THEME_PRIMARY, themeOf } = require('./lib/themes');
 
 let cached = '';
 
@@ -45,6 +46,11 @@ function renderDocument(template, meta) {
     } else {
       html = html.replace('</head>', '<meta property="og:image" content="' + image + '">\n</head>');
     }
+  }
+  if (meta.theme) {
+    const theme = themeOf(meta.theme);
+    html = html.replace(/(<html\b[^>]*\bclass=")theme-[a-z]+(")/, (full, open, close) => open + 'theme-' + theme + close);
+    html = replaceAttr(html, /(<meta\s+name="theme-color"\s+content=")[^"]*(")/, THEME_PRIMARY[theme]);
   }
   if (meta.robots) {
     html = html.replace('</head>', '<meta name="robots" content="' + escapeHtml(meta.robots) + '">\n</head>');

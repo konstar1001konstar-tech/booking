@@ -27,7 +27,8 @@ function pageMeta(path, master, base) {
       title: name + ' — онлайн-запись',
       description,
       url: base + '/' + master.slug,
-      image: master.profile.photo || ''
+      image: master.profile.photo || '',
+      theme: master.profile.theme
     };
   }
   if (path !== '/' && path !== '/admin') {

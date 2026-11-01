@@ -4,7 +4,7 @@ const SEND_ENDPOINT = '/api/bookings';
 const DEFAULT_TZ = 'Europe/Moscow';
 const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 const DEFAULT_HORIZON = 14;
-const THEMES = ['plum', 'rose', 'wine', 'olive', 'sand', 'ink'];
+const THEMES = ['plum', 'rose', 'wine', 'olive', 'sand', 'ink', 'peach', 'mint', 'ocean'];
 const CATEGORIES = ['manicure', 'massage', 'brows', 'other'];
 const WEEK = [
   { d: 1, t: 'Пн' }, { d: 2, t: 'Вт' }, { d: 3, t: 'Ср' }, { d: 4, t: 'Чт' },
@@ -261,11 +261,46 @@ function showBroken(title, text) {
   showView('broken');
 }
 
-function applyTheme(id) {
+// Тема задаёт всю палитру (src/input.css). Строка состояния Safari и шапка
+// Telegram красятся в основной цвет темы.
+function themeRgb(name) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim().split(/\s+/).map(Number);
+  if (v.length !== 3 || v.some((n) => !Number.isFinite(n))) return '';
+  return '#' + v.map((n) => n.toString(16).padStart(2, '0')).join('');
+}
+
+function applyTheme(id, animate) {
   const theme = THEMES.includes(id) ? id : 'plum';
-  THEMES.forEach((name) => document.documentElement.classList.remove('theme-' + name));
-  document.documentElement.classList.add('theme-' + theme);
+  const root = document.documentElement;
+  if (animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    root.classList.add('theme-anim');
+    clearTimeout(applyTheme.timer);
+    applyTheme.timer = setTimeout(() => root.classList.remove('theme-anim'), 400);
+  }
+  THEMES.forEach((name) => root.classList.remove('theme-' + name));
+  root.classList.add('theme-' + theme);
+  const primary = themeRgb('--c-tg');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta && primary) meta.setAttribute('content', primary);
+  if (tgApp && primary) {
+    try { if (tgApp.setHeaderColor) tgApp.setHeaderColor(primary); } catch (e) { /* старый клиент */ }
+    try { if (tgApp.setBackgroundColor) tgApp.setBackgroundColor(themeRgb('--c-milk') || primary); } catch (e) { /* старый клиент */ }
+  }
   return theme;
+}
+
+function markThemeSwatch(theme) {
+  document.querySelectorAll('#p-theme-list [data-theme]').forEach((b) => {
+    b.setAttribute('aria-checked', b.dataset.theme === theme ? 'true' : 'false');
+    b.tabIndex = b.dataset.theme === theme ? 0 : -1;
+  });
+}
+
+function pickTheme(id) {
+  const theme = THEMES.includes(id) ? id : 'plum';
+  $('#p-theme').value = theme;
+  markThemeSwatch(theme);
+  applyTheme(theme, true);
 }
 
 function thumbUrl(url) {
@@ -301,11 +336,11 @@ function renderServices() {
     <article class="flex items-center justify-between gap-4 py-4">
       <div class="min-w-0">
         <h3 class="text-[17px] font-semibold leading-snug">${esc(s.name)}</h3>
-        ${s.dur ? `<p class="mt-0.5 text-sm text-neutral-600">⏱ ${esc(s.dur)}</p>` : ''}
+        ${s.dur ? `<p class="mt-0.5 text-sm text-muted">⏱ ${esc(s.dur)}</p>` : ''}
       </div>
       <div class="flex shrink-0 flex-col items-end gap-2">
         <p class="whitespace-nowrap text-[17px] font-semibold">${fmtPrice(s.price)}</p>
-        <button type="button" data-service="${i}" class="rounded-full bg-tg px-4 py-2 text-sm font-semibold text-white shadow-sm">Записаться</button>
+        <button type="button" data-service="${i}" class="rounded-full bg-tg active:bg-tg-dark px-4 py-2 text-sm font-semibold text-ontg shadow-sm">Записаться</button>
       </div>
     </article>`).join('');
 }
@@ -516,8 +551,8 @@ function renderDates() {
     const reason = !day.work ? ', выходной' : (!free ? ', нет доступного времени' : '');
     b.setAttribute('aria-label', fullDate(day.iso) + reason);
     const base = 'flex h-[68px] w-14 shrink-0 flex-col items-center justify-center rounded-2xl text-center ';
-    b.className = base + (sel ? 'bg-tg text-white' : 'bg-ios text-neutral-900') + (free ? '' : ' day-off');
-    const sub = sel ? 'text-white' : 'text-neutral-600';
+    b.className = base + (sel ? 'bg-tg active:bg-tg-dark text-ontg' : 'bg-ios text-ink') + (free ? '' : ' day-off');
+    const sub = sel ? 'text-ontg' : 'text-muted';
     b.innerHTML = `<span class="text-xs ${sub}">${esc(cap(formatDay(day.iso, { weekday: 'short' })).replace('.', ''))}</span>`
       + `<span class="mt-0.5 text-lg font-semibold">${Number(day.iso.slice(8, 10))}</span>`;
     b.addEventListener('click', () => {
@@ -549,7 +584,7 @@ function renderSlots() {
     else if (status === 'off') b.setAttribute('aria-label', t + ', в этот день нет приёма');
     else b.setAttribute('aria-label', t);
     const base = 'rounded-xl py-3 text-[15px] font-medium ';
-    b.className = base + (sel ? 'bg-tg text-white' : free ? 'bg-ios text-neutral-900' : 'bg-ios slot-off');
+    b.className = base + (sel ? 'bg-tg active:bg-tg-dark text-ontg' : free ? 'bg-ios text-ink' : 'bg-ios slot-off');
     b.addEventListener('click', () => {
       state.slot = t;
       $('#slot-err').classList.add('is-hidden');
@@ -686,7 +721,7 @@ function showFallback(kind) {
     ? ''
     : ' Контакты мастера в ссылке не указаны — попросите телефон или мессенджер.';
   const p = document.createElement('p');
-  p.className = 'text-center text-sm leading-relaxed text-neutral-700';
+  p.className = 'text-center text-sm leading-relaxed text-muted';
   p.textContent = base + when + extra;
   box.appendChild(p);
   links.forEach((link) => {
@@ -877,8 +912,8 @@ function loadTelegram() {
 function paintDay(btn, on) {
   btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   btn.className = on
-    ? 'rounded-full bg-tg px-3 py-1.5 text-sm font-semibold text-white'
-    : 'rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 ring-1 ring-ios';
+    ? 'rounded-full bg-tg active:bg-tg-dark px-3 py-1.5 text-sm font-semibold text-ontg'
+    : 'rounded-full bg-surface px-3 py-1.5 text-sm font-semibold text-muted ring-1 ring-ios';
 }
 
 function readWorkDays() {
@@ -903,7 +938,7 @@ function initDayToggles() {
   });
 }
 
-const INP = 'min-w-0 rounded-xl bg-white px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40';
+const INP = 'min-w-0 rounded-xl bg-surface px-3.5 py-2.5 text-sm outline-none ring-2 ring-transparent focus:ring-tg/40';
 
 function renderRows() {
   const svcList = $('#svc-list');
@@ -913,7 +948,7 @@ function renderRows() {
       <div class="mt-2 flex gap-2">
         <input data-k="price" value="${esc(s.price)}" inputmode="numeric" placeholder="Цена, ₽" class="${INP} flex-1">
         <input data-k="dur" value="${esc(s.dur)}" maxlength="20" placeholder="Длит. (2 ч)" class="${INP} flex-1">
-        <button type="button" data-del="${i}" aria-label="Удалить услугу" class="shrink-0 rounded-xl bg-white px-3.5 text-red-600">✕</button>
+        <button type="button" data-del="${i}" aria-label="Удалить услугу" class="shrink-0 rounded-xl bg-surface px-3.5 text-red-600">✕</button>
       </div>
     </div>`).join('');
 }
@@ -942,6 +977,8 @@ function fillPanel(c) {
   $('#p-desc').value = c.desc;
   $('#p-cat').value = CATEGORIES.includes(c.category) ? c.category : 'other';
   $('#p-theme').value = THEMES.includes(c.theme) ? c.theme : 'plum';
+  markThemeSwatch($('#p-theme').value);
+  $('#p-theme-preview-name').textContent = c.name || 'Ваша визитка';
   ensureTzOption(c.tz);
   $('#p-tz').value = c.tz;
   $('#p-photo').value = c.photo;
@@ -988,15 +1025,15 @@ function renderBookings(items) {
   box.innerHTML = items.map((b) => {
     const actions = [];
     if (b.status === 'pending') {
-      actions.push('<button type="button" data-act="confirm" data-id="' + esc(b.id) + '" class="rounded-full bg-tg px-3 py-1.5 text-xs font-semibold text-white">Подтвердить</button>');
-      actions.push('<button type="button" data-act="cancel" data-id="' + esc(b.id) + '" class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 ring-1 ring-ios">Отменить</button>');
+      actions.push('<button type="button" data-act="confirm" data-id="' + esc(b.id) + '" class="rounded-full bg-tg active:bg-tg-dark px-3 py-1.5 text-xs font-semibold text-ontg">Подтвердить</button>');
+      actions.push('<button type="button" data-act="cancel" data-id="' + esc(b.id) + '" class="rounded-full bg-surface px-3 py-1.5 text-xs font-semibold text-muted ring-1 ring-ios">Отменить</button>');
     }
-    actions.push('<button type="button" data-act="delete" data-id="' + esc(b.id) + '" class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-ios">Удалить</button>');
+    actions.push('<button type="button" data-act="delete" data-id="' + esc(b.id) + '" class="rounded-full bg-surface px-3 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-ios">Удалить</button>');
     return '<article class="rounded-xl bg-ios p-3">'
       + '<p class="font-medium">' + esc(b.dateText || b.date) + ', ' + esc(b.time) + '</p>'
-      + '<p class="mt-1 text-neutral-700">' + esc(b.serviceName) + ' · ' + esc(fmtPrice(b.servicePrice)) + '</p>'
+      + '<p class="mt-1 text-muted">' + esc(b.serviceName) + ' · ' + esc(fmtPrice(b.servicePrice)) + '</p>'
       + '<p class="mt-1">' + esc(b.name) + ' · ' + esc(b.phone) + '</p>'
-      + '<p class="mt-1 text-xs text-neutral-600">' + esc(STATUS_TEXT[b.status] || b.status) + '</p>'
+      + '<p class="mt-1 text-xs text-muted">' + esc(STATUS_TEXT[b.status] || b.status) + '</p>'
       + '<div class="mt-2 flex flex-wrap gap-2">' + actions.join('') + '</div>'
       + '</article>';
   }).join('');
@@ -1035,6 +1072,8 @@ function openPanel() {
 
 function closePanel() {
   setSheet(panel, false);
+  // Несохранённый выбор цвета — только предпросмотр: вернуть сохранённую тему.
+  if (config) applyTheme(config.theme, true);
   const btn = $('#open-settings');
   if (btn) btn.focus({ preventScroll: true });
 }
@@ -1060,7 +1099,7 @@ function photoStatus(id, text, isError) {
   el.textContent = text || '';
   el.classList.toggle('is-hidden', !text);
   el.classList.toggle('text-red-600', Boolean(isError));
-  el.classList.toggle('text-neutral-600', !isError);
+  el.classList.toggle('text-muted', !isError);
 }
 
 function renderPhotoField() {
@@ -1266,7 +1305,24 @@ function setupAdmin() {
   settingsBtn.classList.remove('is-hidden');
   settingsBtn.addEventListener('click', openPanel);
   panel.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closePanel(); });
-  $('#p-theme').addEventListener('change', () => applyTheme($('#p-theme').value));
+  const themeList = $('#p-theme-list');
+  themeList.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-theme]');
+    if (b) pickTheme(b.dataset.theme);
+  });
+  themeList.addEventListener('keydown', (e) => {
+    const keys = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+    if (!keys[e.key]) return;
+    e.preventDefault();
+    const items = Array.from(themeList.querySelectorAll('[data-theme]'));
+    const i = items.findIndex((b) => b.dataset.theme === $('#p-theme').value);
+    const next = items[(i + keys[e.key] + items.length) % items.length];
+    pickTheme(next.dataset.theme);
+    next.focus();
+  });
+  $('#p-name').addEventListener('input', () => {
+    $('#p-theme-preview-name').textContent = $('#p-name').value.trim() || 'Ваша визитка';
+  });
   $('#svc-add').addEventListener('click', () => { readRows(); draft.push({ name: '', price: '', dur: '' }); renderRows(); });
   $('#svc-list').addEventListener('click', (e) => {
     const del = e.target.closest('[data-del]');
