@@ -31,6 +31,11 @@ function profile(extra) {
     legalStatus: 'self',
     inn: '',
     revokeContact: '@anna',
+    city: 'Москва',
+    pubConsentAt: '2026-11-01T00:00:00.000Z',
+    termsAt: '2026-11-01T00:00:00.000Z',
+    pubConsent: true,
+    terms: true,
     phone: '+79991234567',
     telegram: '@anna_nails',
     whatsapp: ''
@@ -124,10 +129,14 @@ test('экранирование HTML для Telegram не пропускает 
     time: '10:00',
     clientName: '<script>',
     clientPhone: '+79990000000'
-  }, { profile: { category: 'manicure', addr: 'дом <1>' } });
+  }, { profile: { category: 'manicure', addr: 'дом <1>' } }, 'https://card.test/admin');
   assert.equal(text.includes('<script>'), false);
   assert.equal(text.includes('<i>'), false);
-  assert.equal(text.includes('&lt;script&gt;'), true);
+  assert.equal(text.includes('&lt;i&gt;гель&lt;/i&gt;'), true);
+  // 152-ФЗ: имя и телефон клиента в Telegram (и через релей вне РФ) не уходят.
+  assert.equal(text.includes('script'), false);
+  assert.equal(text.includes('79990000000'), false);
+  assert.equal(text.includes('https://card.test/admin'), true);
   assert.equal(text.includes('дом &lt;1&gt;'), true);
   assert.equal(text.includes('<b>Новая заявка</b>'), true);
 });
@@ -217,8 +226,11 @@ test('заявка проверяет поля и не берёт chat_id из �
   assert.equal(ok.body.notified, true);
   assert.equal(telegram.sent[0].chatId, '1001');
   assert.equal(telegram.sent[0].options.parseMode, 'HTML');
-  assert.equal(telegram.sent[0].text.includes('<script>'), false);
-  assert.equal(telegram.sent[0].text.includes('&lt;script&gt;'), true);
+  assert.equal(telegram.sent[0].text.includes('script'), false);
+  assert.equal(telegram.sent[0].text.includes('9991234567'), false);
+  assert.equal(telegram.sent[0].text.includes('Маникюр'), true);
+  const kb = telegram.sent[0].options.replyMarkup.inline_keyboard;
+  assert.equal(kb[1][0].url, 'https://card.test/admin');
   const stored = await repo.getBooking(ok.body.bookingId);
   assert.equal(stored.clientPhone, '+79991234567');
   assert.equal(stored.servicePrice, 1500);

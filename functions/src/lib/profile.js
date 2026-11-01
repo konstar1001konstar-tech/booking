@@ -7,7 +7,8 @@ const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 const DEFAULT_SLOTS = ['10:00', '12:00', '14:00', '16:00', '18:00'];
 const RESERVED = new Set([
   'admin', 'api', 'login', 'assets', 'static', 'health', 'index', 'app',
-  'www', 'telegram', 'webhook', 'robots', 'favicon', 'media'
+  'www', 'telegram', 'webhook', 'robots', 'favicon', 'media', 'privacy',
+  'terms', 'terms-masters', 'auth', 'oauth', 'signup', 'fonts', 'styles'
 ]);
 
 function validTz(tz) {
@@ -75,6 +76,46 @@ function cleanTelegram(v) {
   return null;
 }
 
+function cleanVk(v) {
+  const s = String(v || '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(/^https?:\/\//i.test(s) ? s : 'https://' + s.replace(/^@/, 'vk.com/'));
+    const host = u.hostname.replace(/^(www|m)\./, '');
+    if (u.protocol === 'https:' && (host === 'vk.com' || host === 'vk.ru')) {
+      const name = u.pathname.replace(/^\/+|\/+$/g, '');
+      if (/^[A-Za-z0-9_.]{2,64}$/.test(name)) return 'https://vk.com/' + name;
+    }
+  } catch (e) { /* не ссылка */ }
+  return null;
+}
+
+function cleanMax(v) {
+  const s = String(v || '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(s);
+    const host = u.hostname.replace(/^www\./, '');
+    if (u.protocol === 'https:' && (host === 'max.ru' || host === 'web.max.ru')) {
+      const path = u.pathname.replace(/\/+$/g, '');
+      if (/^\/[A-Za-z0-9_\-\/]{2,80}$/.test(path)) return 'https://max.ru' + path;
+    }
+  } catch (e) { /* не ссылка */ }
+  return null;
+}
+
+// Без этих данных согласие клиента не называет оператора (ч.4 ст.9 152-ФЗ),
+// поэтому страница не принимает заявки, пока мастер их не заполнит.
+function operatorMissing(profile) {
+  const p = profile || {};
+  const out = [];
+  if (String(p.legalName || '').trim().length < 5) out.push('ФИО');
+  if (String(p.city || '').trim().length < 2) out.push('город');
+  if (String(p.revokeContact || '').trim().length < 3) out.push('контакт для отзыва согласия');
+  if (!p.pubConsentAt) out.push('согласие на публикацию данных оператора');
+  return out;
+}
+
 function cleanInn(v) {
   const raw = String(v || '').trim();
   if (!raw) return '';
@@ -109,8 +150,10 @@ function normalizeClientPhone(value) {
   return '+' + d;
 }
 
-function sanitizeProfile(input) {
+function sanitizeProfile(input, previous, nowIso) {
   const src = input && typeof input === 'object' ? input : {};
+  const prev = previous && typeof previous === 'object' ? previous : {};
+  const stamp = nowIso || new Date().toISOString();
   const str = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
   const name = str(src.name, 60);
   if (name.length < 2) return { ok: false, message: 'Укажите имя мастера, минимум 2 символа.' };
@@ -153,9 +196,17 @@ function sanitizeProfile(input) {
   const telegramRaw = str(src.telegram, 80);
   const telegram = telegramRaw ? cleanTelegram(telegramRaw) : '';
   if (telegram == null) return { ok: false, message: 'Telegram: укажите @username или ссылку https://t.me/username' };
-  const whatsappRaw = str(src.whatsapp, 24);
+  // WhatsApp заблокирован в РФ (с февраля 2026): поле больше не редактируется
+  // в панели и не показывается клиентам, но ранее сохранённый номер не теряем.
+  const whatsappRaw = str(src.whatsapp == null ? prev.whatsapp : src.whatsapp, 24);
   const whatsapp = whatsappRaw ? cleanPhone(whatsappRaw) : '';
   if (whatsappRaw && !whatsapp) return { ok: false, message: 'WhatsApp: укажите номер с кодом страны.' };
+  const vkRaw = str(src.vk, 120);
+  const vk = vkRaw ? cleanVk(vkRaw) : '';
+  if (vk == null) return { ok: false, message: 'ВКонтакте: укажите ссылку вида https://vk.com/имя' };
+  const maxRaw = str(src.max, 120);
+  const max = maxRaw ? cleanMax(maxRaw) : '';
+  if (max == null) return { ok: false, message: 'MAX: укажите ссылку вида https://max.ru/…' };
   const innRaw = str(src.inn, 16);
   const inn = innRaw ? cleanInn(innRaw) : '';
   if (inn == null) return { ok: false, message: 'ИНН: 10 или 12 цифр, либо оставьте поле пустым.' };
@@ -181,9 +232,16 @@ function sanitizeProfile(input) {
       legalName: str(src.legalName, 120),
       legalStatus: status,
       inn: inn || '',
+      city: str(src.city, 60),
       revokeContact: str(src.revokeContact, 120),
+      // Отдельное согласие мастера на публикацию ФИО/статуса/ИНН (ст. 10.1 152-ФЗ)
+      // и принятие условий для мастеров — с датой, когда их дали.
+      pubConsentAt: src.pubConsent === true ? (prev.pubConsentAt || stamp) : '',
+      termsAt: src.terms === true ? (prev.termsAt || stamp) : (prev.termsAt || ''),
       phone: phone ? cleanPhone(phone) : '',
       telegram: telegram || '',
+      vk: vk || '',
+      max: max || '',
       whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : ''
     }
   };
@@ -208,9 +266,14 @@ function starterProfile(firstName) {
     legalName: '',
     legalStatus: '',
     inn: '',
+    city: '',
     revokeContact: '',
+    pubConsentAt: '',
+    termsAt: '',
     phone: '',
     telegram: '',
+    vk: '',
+    max: '',
     whatsapp: ''
   };
 }
@@ -225,5 +288,8 @@ module.exports = {
   sanitizeProfile,
   starterProfile,
   normalizeClientPhone,
-  parseSlots
+  parseSlots,
+  operatorMissing,
+  cleanVk,
+  cleanMax
 };

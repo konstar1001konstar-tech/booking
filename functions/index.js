@@ -31,8 +31,12 @@ function buildHandler() {
   const secrets = {
     botToken: process.env.BOT_TOKEN || '',
     sessionSecret: process.env.SESSION_SECRET || '',
-    webhookSecret: process.env.WEBHOOK_SECRET || ''
+    webhookSecret: process.env.WEBHOOK_SECRET || '',
+    // Необязательный отдельный ключ для хэшей в счётчиках защиты от спама;
+    // без него ключ выводится из SESSION_SECRET.
+    rateSecret: process.env.RATE_SECRET || ''
   };
+  const flag = String(process.env.ALLOW_TELEGRAM_LOGIN || 'true').trim().toLowerCase();
   return createHandler({
     repo: buildRepo(),
     telegram: createTelegram(() => secrets.botToken, {
@@ -44,7 +48,19 @@ function buildHandler() {
     publicUrl: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
     secureCookie: process.env.COOKIE_SECURE !== '0',
     setWebhook: process.env.SET_WEBHOOK === '1',
-    webhookUrl: (process.env.WEBHOOK_URL || '').trim()
+    webhookUrl: (process.env.WEBHOOK_URL || '').trim(),
+    allowTelegramLogin: !['0', 'false', 'no', 'off'].includes(flag),
+    oauth: {
+      yandex: { clientId: process.env.YANDEX_CLIENT_ID || '', clientSecret: process.env.YANDEX_CLIENT_SECRET || '' },
+      vkid: { clientId: process.env.VKID_CLIENT_ID || '', clientSecret: process.env.VKID_CLIENT_SECRET || '' }
+    },
+    owner: {
+      fio: process.env.OWNER_FIO || '',
+      inn: process.env.OWNER_INN || '',
+      email: process.env.OWNER_EMAIL || ''
+    },
+    botUsername: (process.env.BOT_USERNAME || '').replace(/^@/, '').trim(),
+    retentionMonths: Number(process.env.RETENTION_MONTHS || 12)
   });
 }
 

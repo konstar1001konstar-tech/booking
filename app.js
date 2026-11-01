@@ -122,6 +122,31 @@ function cleanWhatsapp(v) {
   return phone ? phone.replace(/\D/g, '') : '';
 }
 
+function cleanVk(v) {
+  const s = String(v || '').trim();
+  if (!s) return '';
+  const at = s.match(/^@?([A-Za-z0-9_.]{2,64})$/);
+  if (at && !s.includes('/')) return 'https://vk.com/' + at[1];
+  try {
+    const u = new URL(s);
+    const host = u.hostname.replace(/^(www|m)\./, '');
+    const path = u.pathname.replace(/^\/+|\/+$/g, '');
+    if (u.protocol === 'https:' && (host === 'vk.com' || host === 'vk.ru') && /^[A-Za-z0-9_.]{2,64}$/.test(path)) return 'https://vk.com/' + path;
+  } catch (e) { /* не ссылка */ }
+  return '';
+}
+
+function cleanMax(v) {
+  const s = String(v || '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(s);
+    const path = u.pathname.replace(/\/+$/g, '');
+    if (u.protocol === 'https:' && (u.hostname === 'max.ru' || u.hostname === 'web.max.ru') && /^\/[A-Za-z0-9_\-/]{2,120}$/.test(path)) return 'https://max.ru' + path;
+  } catch (e) { /* не ссылка */ }
+  return '';
+}
+
 function cleanInn(v) {
   const raw = String(v || '').trim();
   if (!raw) return '';
@@ -175,8 +200,13 @@ function clean(r, opts) {
       legalStatus: status,
       inn: cleanInn(r.inn),
       revokeContact: str(r.revokeContact, 120),
+      city: str(r.city, 60),
+      pubConsentAt: str(r.pubConsentAt, 40),
+      termsAt: str(r.termsAt, 40),
       phone: cleanPhone(r.phone),
       telegram: cleanTelegram(r.telegram),
+      vk: cleanVk(r.vk),
+      max: cleanMax(r.max),
       whatsapp: cleanWhatsapp(r.whatsapp)
     };
   } catch (e) {
@@ -226,6 +256,7 @@ function configFromApi(data) {
   if (!c) return null;
   c.slug = data.slug;
   c.published = Boolean(data.published);
+  c.bookingOpen = data.bookingOpen !== false;
   return c;
 }
 
@@ -662,8 +693,12 @@ function phoneOk(value) {
   return true;
 }
 
+function bookingOpen() {
+  return !config || config.bookingOpen !== false;
+}
+
 function syncConsent() {
-  confirmBtn.disabled = sending || !consentEl.checked;
+  confirmBtn.disabled = sending || !consentEl.checked || !bookingOpen();
   if (consentEl.checked) $('#consent-err').classList.add('is-hidden');
 }
 
@@ -687,6 +722,11 @@ function openModal(service, trigger) {
   setSheet(modal, true);
   sheet.focus({ preventScroll: true });
   refreshBusy();
+  // Мастер не заполнил данные оператора — сервер заявку не примет, поэтому
+  // сразу показываем контакты и не просим клиента вводить имя и телефон.
+  const open = bookingOpen();
+  [nameEl, phoneEl, consentEl].forEach((el) => { el.disabled = !open; });
+  if (!open) showFallback('operator_missing');
 }
 
 function closeModal() {
@@ -700,7 +740,8 @@ function contactLinks(c) {
     const href = c.telegram.startsWith('http') ? c.telegram : 'https://t.me/' + c.telegram.replace(/^@/, '');
     out.push({ href, label: 'Написать в Telegram', blank: true });
   }
-  if (c.whatsapp) out.push({ href: 'https://wa.me/' + c.whatsapp.replace(/\D/g, ''), label: 'Написать в WhatsApp', blank: true });
+  if (c.vk) out.push({ href: c.vk, label: 'Написать во ВКонтакте', blank: true });
+  if (c.max) out.push({ href: c.max, label: 'Написать в MAX', blank: true });
   if (c.phone) out.push({ href: 'tel:' + c.phone.replace(/[^\d+]/g, ''), label: 'Позвонить мастеру', blank: false });
   return out;
 }
@@ -716,6 +757,7 @@ function showFallback(kind) {
   if (kind === 'slot_taken') base = 'Это время уже занято. Выберите другое.';
   else if (kind === 'rate_limited') base = 'Слишком много заявок с этого телефона или адреса. Попробуйте позже.';
   else if (kind === 'validation') base = 'Проверьте имя, телефон и согласие.';
+  else if (kind === 'operator_missing') base = 'Онлайн-запись к этому мастеру пока недоступна: мастер ещё не указал свои данные для согласия на обработку данных. Свяжитесь с мастером напрямую.';
   else if (kind === 'unconfigured') base = 'Это ссылка старого формата: заявка с неё на сервер не отправляется. Напишите мастеру напрямую — время он подтвердит сам.';
   const extra = links.length || kind === 'slot_taken' || kind === 'rate_limited' || kind === 'validation'
     ? ''
@@ -747,6 +789,7 @@ function operatorPhrase(c) {
   if (c.legalStatus === 'ip') parts.push('статус: ИП');
   if (c.legalStatus === 'self') parts.push('статус: самозанятый');
   if (c.inn) parts.push('ИНН ' + c.inn);
+  if (c.city) parts.push('г. ' + c.city);
   return parts.join(', ');
 }
 
@@ -754,7 +797,7 @@ function revokePhrase(c) {
   if (c.revokeContact) {
     return 'Чтобы отозвать согласие или попросить удалить данные, напишите оператору: ' + c.revokeContact + '.';
   }
-  if (c.phone || c.telegram || c.whatsapp) {
+  if (c.phone || c.telegram || c.vk || c.max) {
     return 'Чтобы отозвать согласие или попросить удалить данные, обратитесь к оператору по контакту, указанному на странице.';
   }
   return 'Чтобы отозвать согласие или попросить удалить данные, запросите у мастера контакт для обращения: в ссылке он не указан.';
@@ -778,25 +821,45 @@ function openLegal(kind, opener) {
   const op = operatorPhrase(config);
   const data = 'Имя, номер телефона, выбранная услуга, дата и время визита.';
   const purpose = 'Связь мастера с клиентом, чтобы подтвердить заявку, напомнить о визите и оказать выбранную услугу.';
-  const actions = 'Сбор, запись, систематизация, хранение, уточнение, использование, передача, удаление.';
-  const transfer = 'Заявка сначала записывается в базу на территории Российской Федерации (Yandex Cloud, регион ru-central1). После записи мастеру отправляется уведомление в Telegram: мессенджер используется только чтобы уведомить мастера и получает текст заявки (имя, телефон, услуга, дата и время).';
+  const actions = 'Сбор, запись, систематизация, хранение, уточнение, использование, удаление. Распространение и передача третьим лицам для их собственных целей не осуществляются.';
+  const o = siteConf && siteConf.owner ? siteConf.owner : {};
+  const months = (siteConf && siteConf.retentionMonths) || 12;
+  const ownerWho = (o.fio ? o.fio + ', ' : 'владелец сервиса БьютиЛинк, ') + 'плательщик НПД (самозанятый)' + (o.inn ? ', ИНН ' + o.inn : '');
+  const ownerContact = o.email ? ' Связь с ним: ' + o.email + '.' : '';
+  const processor = 'По поручению оператора (ч. 3 ст. 6 152-ФЗ) данные обрабатывает ' + ownerWho + ' — сервис БьютиЛинк, на котором работает эта страница. Обработчик хранит данные только для передачи заявки мастеру и обязан соблюдать конфиденциальность и меры защиты по ст. 19 152-ФЗ.' + ownerContact;
+  const storage = 'Данные хранятся в базе на территории Российской Федерации (Yandex Cloud, регион ru-central1). Мастер видит заявку в своей панели после входа через Яндекс ID или Mail.ru. Если мастер подключил Telegram, туда приходит только уведомление без вашего имени и телефона: услуга, дата и время.';
+  const retention = months + ' месяцев после даты визита, затем заявка удаляется автоматически. Мастер может удалить её раньше. При отзыве согласия данные удаляются в течение 10 рабочих дней.';
+  const rights = 'Вы вправе узнать, какие ваши данные обрабатываются, потребовать их уточнения, блокирования или удаления, отозвать согласие и обжаловать действия оператора в Роскомнадзоре или в суде (ст. 14, 17, 21 152-ФЗ). Ответ на запрос — в течение 10 рабочих дней.';
   if (kind === 'consent') {
     title.textContent = 'Согласие на обработку персональных данных';
+    addPara(body, 'Кто даёт согласие.', 'Я, отправляя заявку, подтверждаю, что мне исполнилось 14 лет, и свободно, своей волей и в своём интересе даю согласие (ст. 9 152-ФЗ). Заявку за ребёнка младше 14 лет оставляет родитель или законный представитель.');
     addPara(body, 'Оператор.', 'Оператором персональных данных является ' + op + '.');
+    addPara(body, 'Обработчик.', processor);
     addPara(body, 'Цель.', purpose);
     addPara(body, 'Перечень данных.', data);
-    addPara(body, 'Действия с данными.', actions);
-    addPara(body, 'Передача.', transfer);
-    addPara(body, 'Срок хранения.', 'До отзыва согласия. Заявка хранится в базе Yandex Cloud в России; мастер может удалить её в панели.');
-    addPara(body, 'Отзыв согласия.', revokePhrase(config));
+    addPara(body, 'Действия с данными.', actions + ' Обработка автоматизированная.');
+    addPara(body, 'Где хранятся.', storage);
+    addPara(body, 'Срок действия и хранения.', 'Согласие действует ' + retention);
+    addPara(body, 'Отзыв согласия.', revokePhrase(config) + ' Отзыв можно направить в любой форме, в том числе сообщением.');
   } else {
     title.textContent = 'Политика конфиденциальности';
-    addPara(body, '1. Общие положения.', 'Политика описывает обработку персональных данных при отправке заявки с этой страницы и составлена с учётом Федерального закона от 27.07.2006 № 152-ФЗ «О персональных данных».');
+    addPara(body, '1. Общие положения.', 'Политика описывает обработку персональных данных при отправке заявки с этой страницы и составлена по Федеральному закону от 27.07.2006 № 152-ФЗ «О персональных данных». Сервис не предназначен для лиц младше 14 лет.');
     addPara(body, '2. Оператор.', 'Оператором персональных данных является ' + op + '. Эта страница — форма заявки.');
-    addPara(body, '3. Состав данных.', data);
-    addPara(body, '4. Цель обработки.', purpose);
-    addPara(body, '5. Где хранится заявка.', transfer);
-    addPara(body, '6. Права.', revokePhrase(config));
+    addPara(body, '3. Обработчик.', processor);
+    addPara(body, '4. Состав данных.', data + ' Для защиты от спама IP-адрес и телефон учитываются только в виде необратимого хэша и удаляются через 2 дня. Сайт ставит только технические cookie; рекламы и счётчиков нет.');
+    addPara(body, '5. Цель и основание.', purpose + ' Основание — ваше согласие.');
+    addPara(body, '6. Хранение.', storage + ' Срок: ' + retention);
+    addPara(body, '7. Ваши права.', rights + ' ' + revokePhrase(config));
+    addPara(body, '8. Защита данных.', 'Передача только по HTTPS; доступ к заявкам — только у мастера после входа; хранилище закрыто от публичного доступа, ключи — в Yandex Lockbox; имена и телефоны клиентов не пишутся в журналы.');
+    const p = document.createElement('p');
+    const a = document.createElement('a');
+    a.href = '/privacy';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.className = 'font-medium text-tg underline';
+    a.textContent = 'Полная политика сервиса БьютиЛинк';
+    p.appendChild(a);
+    body.appendChild(p);
   }
   setSheet(legal, true);
   legalSheet.focus({ preventScroll: true });
@@ -819,6 +882,11 @@ async function deliver(payload) {
       signal: ctrl.signal
     });
     const data = await res.json().catch(() => ({}));
+    if (data.error === 'operator_missing') {
+      const err = new Error('operator');
+      err.code = 'operator_missing';
+      throw err;
+    }
     if (data.error === 'slot_taken' || res.status === 409) {
       const err = new Error('slot');
       err.code = 'slot_taken';
@@ -986,7 +1054,8 @@ function fillPanel(c) {
   $('#p-hint').value = c.hint || '';
   $('#p-phone').value = c.phone || '';
   $('#p-telegram').value = c.telegram || '';
-  $('#p-whatsapp').value = c.whatsapp || '';
+  $('#p-vk').value = c.vk || '';
+  $('#p-max').value = c.max || '';
   $('#p-gallery').value = (c.gallery || []).join('\n');
   renderPhotoField();
   renderGalleryField();
@@ -996,6 +1065,9 @@ function fillPanel(c) {
   $('#p-legal-status').value = c.legalStatus || '';
   $('#p-inn').value = c.inn || '';
   $('#p-revoke').value = c.revokeContact || '';
+  $('#p-city').value = c.city || '';
+  $('#p-pub-consent').checked = Boolean(c.pubConsentAt);
+  $('#p-terms').checked = Boolean(c.termsAt);
   document.querySelectorAll('#p-days [data-day]').forEach((btn) => {
     paintDay(btn, (c.workDays || DEFAULT_WORK_DAYS).includes(Number(btn.dataset.day)));
   });
@@ -1062,7 +1134,7 @@ async function loadBookings() {
 
 function openPanel() {
   fillPanel(config);
-  $('#p-legal').checked = false;
+  loadAccount();
   $('#panel-err').classList.add('is-hidden');
   showLink(config, false);
   loadBookings();
@@ -1369,15 +1441,21 @@ function setupAdmin() {
       el.classList.remove('is-hidden');
       el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
-    if (!$('#p-legal').checked) return fail('Необходимо подтвердить согласие с условиями использования');
+    if ($('#p-legal-name').value.trim().length < 5) return fail('Укажите ФИО — это данные оператора для согласия клиентов');
+    if ($('#p-city').value.trim().length < 2) return fail('Укажите город');
+    if ($('#p-revoke').value.trim().length < 3) return fail('Укажите контакт для отзыва согласия');
+    if (!$('#p-pub-consent').checked) return fail('Отметьте согласие на публикацию данных оператора — без него клиенты не узнают, кто обрабатывает их данные');
+    if (!$('#p-terms').checked) return fail('Примите условия для мастеров');
     const photo = $('#p-photo').value.trim();
     if (photo && !/^https:\/\//i.test(photo)) return fail('Ссылка на главное фото должна начинаться с https://');
     const phoneRaw = $('#p-phone').value.trim();
     if (phoneRaw && !cleanPhone(phoneRaw)) return fail('Телефон мастера: укажите номер с кодом страны, от 8 до 15 цифр');
     const tgRaw = $('#p-telegram').value.trim();
     if (tgRaw && !cleanTelegram(tgRaw)) return fail('Telegram: укажите @username или ссылку https://t.me/username');
-    const waRaw = $('#p-whatsapp').value.trim();
-    if (waRaw && !cleanWhatsapp(waRaw)) return fail('WhatsApp: укажите номер с кодом страны');
+    const vkRaw = $('#p-vk').value.trim();
+    if (vkRaw && !cleanVk(vkRaw)) return fail('ВКонтакте: укажите ссылку https://vk.com/... или @username');
+    const maxRaw = $('#p-max').value.trim();
+    if (maxRaw && !cleanMax(maxRaw)) return fail('MAX: укажите ссылку https://max.ru/...');
     const innRaw = $('#p-inn').value.trim();
     if (innRaw && !cleanInn(innRaw)) return fail('ИНН: 10 или 12 цифр, либо оставьте поле пустым');
     const services = draft.filter((s) => s.name.trim()).map((s) => ({
@@ -1413,9 +1491,13 @@ function setupAdmin() {
       legalStatus: $('#p-legal-status').value,
       inn: innRaw,
       revokeContact: $('#p-revoke').value,
+      city: $('#p-city').value,
+      pubConsent: $('#p-pub-consent').checked,
+      terms: $('#p-terms').checked,
       phone: phoneRaw,
       telegram: tgRaw,
-      whatsapp: waRaw
+      vk: vkRaw,
+      max: maxRaw
     };
     const c = clean(Object.assign({}, payload, { chatId: '' }), { requireChat: false });
     if (!c) return fail('Проверьте имя и наличие хотя бы одной услуги');
@@ -1433,9 +1515,11 @@ function setupAdmin() {
       const next = configFromApi(data);
       if (!next) return fail('Сервер вернул неполный профиль');
       $('#panel-err').classList.add('is-hidden');
+      config = next;
       applyConfig(next);
       fillPanel(next);
       showLink(next, true);
+      loadAccount();
       haptic('success');
     } catch (e) {
       fail('Не удалось сохранить профиль. Проверьте интернет.');
@@ -1478,6 +1562,156 @@ async function exchangeToken(token) {
   return data.slug || '';
 }
 
+let siteConf = null;
+
+async function loadSiteConf() {
+  if (siteConf) return siteConf;
+  try {
+    const res = await fetch('/api/config', { credentials: 'same-origin' });
+    const data = await res.json();
+    siteConf = data && data.ok ? data : null;
+  } catch (e) {
+    siteConf = null;
+  }
+  return siteConf || { providers: [], telegramLogin: true, owner: {}, retentionMonths: 12 };
+}
+
+function renderOwnerReq(conf) {
+  const el = $('#owner-req');
+  if (!el) return;
+  const o = (conf && conf.owner) || {};
+  const parts = [];
+  if (o.fio) parts.push(o.fio);
+  parts.push('плательщик НПД (самозанятый)');
+  if (o.inn) parts.push('ИНН ' + o.inn);
+  el.replaceChildren();
+  el.appendChild(document.createTextNode('Сервис БьютиЛинк: ' + parts.join(', ')));
+  if (o.email) {
+    el.appendChild(document.createTextNode(' · '));
+    const a = document.createElement('a');
+    a.href = 'mailto:' + o.email;
+    a.className = 'underline';
+    a.textContent = o.email;
+    el.appendChild(a);
+  }
+}
+
+const AUTH_ERRORS = {
+  state: 'Вход не завершён: истекло время или вход начат в другом окне. Попробуйте ещё раз.',
+  denied: 'Вход отменён.',
+  exchange: 'Провайдер входа не ответил. Попробуйте ещё раз.',
+  provider: 'Этот способ входа сейчас недоступен.',
+  session: 'Сначала войдите в панель, потом привяжите вход.',
+  taken: 'Эта учётная запись уже привязана к другой странице.'
+};
+
+function showAdminError(msg) {
+  const err = $('#admin-error');
+  if (!err) return;
+  err.textContent = msg;
+  err.classList.remove('is-hidden');
+}
+
+async function showLogin(params) {
+  const conf = await loadSiteConf();
+  const ids = (conf.providers || []).map((p) => p.id);
+  $('#login-yandex').classList.toggle('is-hidden', !ids.includes('yandex'));
+  $('#login-vkid').classList.toggle('is-hidden', !ids.includes('vkid'));
+  $('#login-tg').classList.toggle('is-hidden', !conf.telegramLogin);
+  $('#login-none').classList.toggle('is-hidden', ids.length > 0);
+  const code = params.get('auth_error');
+  if (code) showAdminError(AUTH_ERRORS[code] || 'Не получилось войти. Попробуйте ещё раз.');
+  if (params.get('signup') === '1') await showSignup();
+}
+
+async function showSignup() {
+  let info = null;
+  try {
+    const res = await fetch('/api/auth/signup', { credentials: 'same-origin' });
+    info = await res.json().catch(() => null);
+    if (!res.ok) info = null;
+  } catch (e) {
+    info = null;
+  }
+  if (!info || !info.ok) {
+    showAdminError('Регистрация не открыта: войдите через Яндекс ID или Mail.ru ещё раз.');
+    return;
+  }
+  $('#login-box').classList.add('is-hidden');
+  $('#signup-box').classList.remove('is-hidden');
+  const slugEl = $('#su-slug');
+  const preview = () => { $('#su-preview').textContent = location.origin + '/' + (slugEl.value.trim().toLowerCase() || 'ваш-адрес'); };
+  if (info.name) $('#su-name').value = info.name;
+  slugEl.addEventListener('input', preview);
+  preview();
+  $('#signup-box').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#admin-error').classList.add('is-hidden');
+    const slug = slugEl.value.trim().toLowerCase();
+    if (!/^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])$/.test(slug)) return showAdminError('Адрес: латинские буквы, цифры и дефис, от 3 до 32 символов.');
+    if (!$('#su-terms').checked) return showAdminError('Примите условия для мастеров.');
+    const btn = $('#su-submit');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, name: $('#su-name').value, terms: true })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) return showAdminError(data.message || 'Не удалось создать страницу.');
+      location.replace('/' + data.slug + '?admin=1');
+    } catch (err) {
+      showAdminError('Не удалось создать страницу. Проверьте интернет.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+async function loadAccount() {
+  const me = await currentMaster();
+  if (!me) return;
+  const warn = $('#operator-warn');
+  const missing = me.operatorMissing || [];
+  if (missing.length) {
+    warn.textContent = 'Онлайн-запись приостановлена: по 152-ФЗ клиенты должны видеть, кто обрабатывает их данные. Заполните внизу: ' + missing.join(', ') + ' — и сохраните профиль.';
+    warn.classList.remove('is-hidden');
+  } else {
+    warn.classList.add('is-hidden');
+  }
+  const ids = me.identities || [];
+  const providers = (me.providers || []).map((p) => p.id);
+  const names = { yandex: 'Яндекс ID', vkid: 'Mail.ru' };
+  const linked = ids.map((id) => names[id] || id);
+  let status = linked.length ? 'Вход: ' + linked.join(', ') + '.' : 'Вход через Яндекс ID или Mail.ru не привязан.';
+  status += me.telegram ? ' Telegram подключён для уведомлений.' : ' Telegram не подключён.';
+  if (!linked.length && me.telegramLogin) status += ' Привяжите Яндекс ID или Mail.ru — вход через Telegram скоро отключится.';
+  $('#acc-status').textContent = status;
+  $('#acc-yandex').classList.toggle('is-hidden', !providers.includes('yandex') || ids.includes('yandex'));
+  $('#acc-vkid').classList.toggle('is-hidden', !providers.includes('vkid') || ids.includes('vkid'));
+  const tgBtn = $('#acc-tg');
+  tgBtn.textContent = me.telegram ? 'Подключить другой Telegram' : 'Подключить Telegram для уведомлений';
+  tgBtn.classList.remove('is-hidden');
+  if (!tgBtn.dataset.bound) {
+    tgBtn.dataset.bound = '1';
+    tgBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/admin/telegram-link', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json().catch(() => ({}));
+        if (data.ok && /^https:\/\/t\.me\//.test(data.url)) location.href = data.url;
+        else $('#acc-status').textContent = data.message || 'Не удалось получить ссылку для Telegram.';
+      } catch (e) {
+        $('#acc-status').textContent = 'Не удалось получить ссылку для Telegram. Проверьте интернет.';
+      }
+    });
+  }
+  const params = new URLSearchParams(location.search);
+  if (params.get('linked')) $('#acc-status').textContent = 'Готово: ' + (names[params.get('linked')] || 'вход') + ' привязан. ' + status;
+  if (params.get('auth_error')) $('#acc-status').textContent = (AUTH_ERRORS[params.get('auth_error')] || 'Не удалось привязать вход.') + ' ' + status;
+}
+
 async function currentMaster() {
   try {
     const res = await fetch('/api/admin/me', { credentials: 'same-origin' });
@@ -1502,10 +1736,15 @@ async function route() {
     if (token) {
       const slug = await exchangeToken(token);
       if (slug) location.replace('/' + slug + '?admin=1');
+      else await showLogin(params);
       return;
     }
-    const me = await currentMaster();
-    if (me && me.slug) location.replace('/' + me.slug + '?admin=1');
+    const me = params.get('signup') === '1' ? null : await currentMaster();
+    if (me && me.slug) {
+      location.replace('/' + me.slug + '?admin=1');
+      return;
+    }
+    await showLogin(params);
     return;
   }
 
@@ -1526,6 +1765,7 @@ async function route() {
   if (path === '/') {
     showView('lock');
     document.title = 'БьютиЛинк — онлайн-запись к бьюти-мастеру';
+    renderOwnerReq(await loadSiteConf());
     return;
   }
 
@@ -1566,6 +1806,7 @@ async function route() {
     }
     showView('app');
     applyConfig(config);
+    loadSiteConf();
     const me = source === data ? await currentMaster() : { slug };
     if (me && me.slug === slug) {
       setupAdmin();
@@ -1693,7 +1934,7 @@ confirmBtn.addEventListener('click', async () => {
       renderDates();
       renderSlots();
     }
-    showFallback(code === 'slot_taken' || code === 'rate_limited' || code === 'validation' || code === 'unconfigured' ? code : 'network');
+    showFallback(code === 'slot_taken' || code === 'rate_limited' || code === 'validation' || code === 'unconfigured' || code === 'operator_missing' ? code : 'network');
     if (code === 'validation' && err.serverMessage) {
       const note = $('#send-fallback p');
       if (note) note.textContent = err.serverMessage;

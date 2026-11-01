@@ -17,6 +17,8 @@ class MemoryRepo {
     this.botState = new Map();
     this.outbox = new Map();
     this.media = new Map();
+    this.idents = new Map();
+    this.sweeps = new Set();
     this._ver = 0;
     this._chain = Promise.resolve();
   }
@@ -41,9 +43,10 @@ class MemoryRepo {
   insertMaster(master) {
     return this._lock(() => {
       if (this.masters.has(master.slug)) throw new RepoError('slug_taken');
-      if (this.byChat.has(String(master.chatId))) throw new RepoError('chat_taken');
+      const chat = master.chatId ? String(master.chatId) : '';
+      if (chat && this.byChat.has(chat)) throw new RepoError('chat_taken');
       this.masters.set(master.slug, clone(master));
-      this.byChat.set(String(master.chatId), master.slug);
+      if (chat) this.byChat.set(chat, master.slug);
       return clone(master);
     });
   }
@@ -85,14 +88,15 @@ class MemoryRepo {
     });
   }
 
-  listBookings(slug) {
+  listBookings(slug, limit) {
+    const max = limit == null ? 100 : limit;
     return this._lock(() => {
       const rows = [];
       for (const row of this.bookings.values()) {
         if (row.slug === slug) rows.push(clone(row));
       }
       rows.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
-      return rows.slice(0, 100);
+      return rows.slice(0, max);
     });
   }
 
@@ -169,6 +173,53 @@ class MemoryRepo {
 }
 
 Object.assign(MemoryRepo.prototype, {
+  patchMaster(slug, fields) {
+    return this._lock(() => {
+      const row = this.masters.get(slug);
+      if (!row) throw new RepoError('not_found');
+      const patch = typeof fields === 'function' ? fields(clone(row)) : fields;
+      Object.assign(row, clone(patch));
+      return clone(row);
+    });
+  },
+  getIdentity(provider, sub) {
+    return this._lock(() => this.idents.get(provider + '\n' + sub) || null);
+  },
+  putIdentity(provider, sub, slug) {
+    return this._lock(() => {
+      const key = provider + '\n' + sub;
+      if (this.idents.has(key)) return this.idents.get(key) === slug;
+      this.idents.set(key, slug);
+      return true;
+    });
+  },
+  deleteIdentity(provider, sub) {
+    return this._lock(() => { this.idents.delete(provider + '\n' + sub); });
+  },
+  linkChat(slug, chatId) {
+    return this._lock(() => {
+      const chat = String(chatId);
+      const row = this.masters.get(slug);
+      if (!row) throw new RepoError('not_found');
+      const owner = this.byChat.get(chat);
+      if (owner && owner !== slug) throw new RepoError('chat_taken');
+      const previous = row.chatId ? String(row.chatId) : '';
+      if (previous && previous !== chat && this.byChat.get(previous) === slug) this.byChat.delete(previous);
+      this.byChat.set(chat, slug);
+      row.chatId = chat;
+      return clone(row);
+    });
+  },
+  listMasterSlugs() {
+    return this._lock(() => [...this.masters.keys()].sort());
+  },
+  claimOnce(day) {
+    return this._lock(() => {
+      if (this.sweeps.has(day)) return false;
+      this.sweeps.add(day);
+      return true;
+    });
+  },
   putOutbox(item) {
     return this._lock(() => {
       this._ver += 1;

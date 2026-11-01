@@ -32,6 +32,16 @@ resource "yandex_function" "api" {
       COOKIE_SECURE = "1"
       SET_WEBHOOK   = var.set_webhook ? "1" : "0"
       WEBHOOK_URL   = var.webhook_url
+      # 152-ФЗ / 149-ФЗ: вход через Яндекс ID и Mail.ru (VK ID); Telegram —
+      # только уведомления. Пустые client_id — кнопки входа скрыты.
+      ALLOW_TELEGRAM_LOGIN = var.allow_telegram_login ? "true" : "false"
+      YANDEX_CLIENT_ID     = var.yandex_client_id
+      VKID_CLIENT_ID       = var.vkid_client_id
+      OWNER_FIO            = var.owner_fio
+      OWNER_INN            = var.owner_inn
+      OWNER_EMAIL          = var.owner_email
+      BOT_USERNAME         = var.bot_username
+      RETENTION_MONTHS     = tostring(var.retention_months)
     },
     var.storage == "ydb" ? {
       # Host:port only. ydb-sdk also reads YDB_ENDPOINT itself for every
@@ -46,7 +56,9 @@ resource "yandex_function" "api" {
       bot_token      = "BOT_TOKEN"
       session_secret = "SESSION_SECRET"
       webhook_secret = "WEBHOOK_SECRET"
-    }, var.relay_url != "" ? { relay_key = "RELAY_KEY" } : {})
+      }, var.relay_url != "" ? { relay_key = "RELAY_KEY" } : {},
+      # Ключ yandex_client_secret нужно сначала добавить в версию секрета Lockbox.
+    var.yandex_client_secret_in_lockbox ? { yandex_client_secret = "YANDEX_CLIENT_SECRET" } : {})
     content {
       id                   = yandex_lockbox_secret.app.id
       version_id           = var.lockbox_version_id

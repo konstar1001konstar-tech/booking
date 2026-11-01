@@ -21,8 +21,9 @@ function profile(extra) {
     name: 'Анна', desc: '', photo: '', addr: '', hint: '',
     services: [{ name: 'Маникюр', price: 1500, dur: '' }],
     slots: ['10:00'], gallery: [], tz: 'Europe/Moscow', workDays: [1, 2, 3, 4, 5],
-    horizon: 14, category: 'manicure', theme: 'plum', legalName: '', legalStatus: '',
-    inn: '', revokeContact: '', phone: '', telegram: '', whatsapp: ''
+    horizon: 14, category: 'manicure', theme: 'plum', legalName: 'Анна Иванова', legalStatus: 'self',
+    inn: '', revokeContact: '@anna', city: 'Москва', pubConsent: true, terms: true,
+    phone: '', telegram: '', whatsapp: ''
   }, extra || {});
 }
 

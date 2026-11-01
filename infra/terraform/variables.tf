@@ -66,3 +66,57 @@ variable "webhook_url" {
   default     = "https://booking-dun-beta.vercel.app/api/tg-hook"
   description = "Адрес вебхука бота. По умолчанию — пересылка на Vercel (api/tg-hook.js), потому что серверы Telegram не всегда достают до Yandex Cloud. Пусто — вебхук прямо на адрес сайта (/api/telegram/webhook)."
 }
+
+variable "allow_telegram_login" {
+  description = "Вход в панель через Telegram (ссылка от бота и виджет). Выключите после того, как владелец привяжет Яндекс ID или Mail.ru."
+  type        = bool
+  default     = true
+}
+
+variable "yandex_client_id" {
+  description = "ClientID приложения Яндекс ID (oauth.yandex.ru). Пусто — кнопка «Яндекс ID» скрыта."
+  type        = string
+  default     = ""
+}
+
+variable "yandex_client_secret_in_lockbox" {
+  description = "true, когда в секрет booking-secrets добавлен ключ yandex_client_secret (Client secret Яндекс ID)."
+  type        = bool
+  default     = false
+}
+
+variable "vkid_client_id" {
+  description = "ID приложения VK ID (id.vk.ru) для входа через Mail.ru. Пусто — кнопка скрыта."
+  type        = string
+  default     = ""
+}
+
+variable "owner_fio" {
+  description = "ФИО владельца сервиса (самозанятый) для подвала, политики и согласия."
+  type        = string
+  default     = ""
+}
+
+variable "owner_inn" {
+  description = "ИНН владельца сервиса."
+  type        = string
+  default     = ""
+}
+
+variable "owner_email" {
+  description = "Почта для обращений по персональным данным."
+  type        = string
+  default     = ""
+}
+
+variable "bot_username" {
+  description = "Имя бота без @ — для ссылки «Подключить Telegram»."
+  type        = string
+  default     = "Online_ZaPiS_nA_bot"
+}
+
+variable "retention_months" {
+  description = "Через сколько месяцев после даты визита заявка удаляется."
+  type        = number
+  default     = 12
+}

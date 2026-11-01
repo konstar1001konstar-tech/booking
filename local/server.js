@@ -67,8 +67,13 @@ async function seed(repo) {
       legalStatus: 'self',
       inn: '',
       revokeContact: '@anna',
+      city: 'Москва',
+      pubConsentAt: now,
+      termsAt: now,
       phone: '+79991234567',
       telegram: '@anna_nails',
+      vk: 'https://vk.com/anna_nails',
+      max: '',
       whatsapp: ''
     }
   });
@@ -90,7 +95,16 @@ async function main() {
     secrets: SECRETS,
     publicUrl: 'http://127.0.0.1:' + PORT,
     secureCookie: false,
-    now: () => new Date()
+    now: () => new Date(),
+    // Для локальной проверки кнопок входа: YANDEX_CLIENT_ID=demo
+    // YANDEX_CLIENT_SECRET=demo VKID_CLIENT_ID=demo npm run dev
+    allowTelegramLogin: !['0', 'false'].includes(String(process.env.ALLOW_TELEGRAM_LOGIN || 'true')),
+    oauth: {
+      yandex: { clientId: process.env.YANDEX_CLIENT_ID || '', clientSecret: process.env.YANDEX_CLIENT_SECRET || '' },
+      vkid: { clientId: process.env.VKID_CLIENT_ID || '' }
+    },
+    owner: { fio: process.env.OWNER_FIO || '', inn: process.env.OWNER_INN || '', email: process.env.OWNER_EMAIL || '' },
+    botUsername: process.env.BOT_USERNAME || ''
   });
 
   const server = http.createServer(async (req, res) => {
@@ -124,7 +138,9 @@ async function main() {
         isBase64Encoded: false,
         requestContext: { identity: { sourceIp: req.socket.remoteAddress || '127.0.0.1' } }
       });
-      res.writeHead(result.statusCode || 200, result.headers || {});
+      const headers = Object.assign({}, result.headers || {});
+      if (result.multiValueHeaders && result.multiValueHeaders['Set-Cookie']) headers['Set-Cookie'] = result.multiValueHeaders['Set-Cookie'];
+      res.writeHead(result.statusCode || 200, headers);
       res.end(result.body || '');
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });

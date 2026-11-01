@@ -7,15 +7,17 @@ const { loadTemplate, renderDocument } = require('./render');
 const service = require('./service');
 const { isTimerEvent } = require('./outbox');
 const { uploadPhoto } = require('./photos');
+const { privacyHtml, termsHtml } = require('./legal-pages');
 
 const SLUG_PATH = /^\/([a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9]))$/;
+const AUTH_PATH = /^\/api\/auth\/(yandex|vkid)\/(start|callback)$/;
 const BOOKING_ACTION = /^\/api\/admin\/bookings\/([A-Za-z0-9_-]{8,32})\/(confirm|cancel|delete)$/;
 
 function pageMeta(path, master, base) {
   if (path === '/admin') {
     return {
       title: 'Вход для мастера · БьютиЛинк',
-      description: 'Вход в настройки страницы записи через Telegram.',
+      description: 'Вход в настройки страницы записи через Яндекс ID или Mail.ru.',
       url: base + '/admin',
       robots: 'noindex'
     };
@@ -40,14 +42,22 @@ function pageMeta(path, master, base) {
   }
   return {
     title: 'БьютиЛинк — онлайн-запись к бьюти-мастеру',
-    description: 'БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер подтверждает запись в Telegram.',
+    description: 'БьютиЛинк — красивая страница записи для бьюти-мастера: услуги, цены, портфолио и заявка на удобное время. Мастер видит заявки в панели и подтверждает запись в один клик.',
     url: base || ''
   };
+}
+
+function legalPage(path, base, deps) {
+  const conf = service.publicConfig(deps);
+  const ctx = { base, owner: conf.owner, bot: conf.bot, retentionMonths: conf.retentionMonths };
+  const body = path === '/privacy' ? privacyHtml(ctx) : termsHtml(ctx);
+  return http.html(200, body, { 'Cache-Control': 'public, max-age=300' });
 }
 
 async function renderPage(event, deps) {
   const path = http.requestPath(event);
   const base = http.publicBase(event, deps);
+  if (path === '/privacy' || path === '/terms-masters') return legalPage(path, base, deps);
   let master = null;
   let status = 200;
   const match = SLUG_PATH.exec(path);
@@ -75,6 +85,15 @@ async function route(event, deps) {
 
   if (method === 'GET' && !path.startsWith('/api')) return renderPage(enriched, deps);
 
+  if (method === 'GET' && path === '/api/config') {
+    return http.json(200, service.publicConfig(deps), { 'Cache-Control': 'public, max-age=60' });
+  }
+  const auth = AUTH_PATH.exec(path);
+  if (method === 'GET' && auth) {
+    if (auth[2] === 'start') return service.oauthStart(deps, enriched, auth[1], query);
+    return service.oauthCallback(deps, enriched, auth[1], query);
+  }
+
   // Фото идут сырым (бинарным) телом, поэтому до разбора JSON.
   if (method === 'POST' && path === '/api/admin/photos') {
     const master = service.requireMaster(await service.sessionFrom(event, deps));
@@ -91,8 +110,9 @@ async function route(event, deps) {
     if (slotsMatch) return http.json(200, await service.getSlots(deps, slotsMatch[1], query));
     if (path === '/api/admin/me') {
       const master = service.requireMaster(await service.sessionFrom(event, deps));
-      return http.json(200, { ok: true, slug: master.slug, published: Boolean(master.published), name: master.profile.name });
+      return http.json(200, service.adminMe(deps, master));
     }
+    if (path === '/api/auth/signup') return http.json(200, service.signupInfo(deps, event));
     if (path === '/api/admin/profile') {
       const master = service.requireMaster(await service.sessionFrom(event, deps));
       return http.json(200, service.publicProfile(master));
@@ -110,6 +130,14 @@ async function route(event, deps) {
   if (method === 'POST' && path === '/api/admin/session') {
     const opened = await service.openSession(deps, body || {});
     return http.json(200, opened.body, { 'Set-Cookie': opened.cookie });
+  }
+  if (method === 'POST' && path === '/api/auth/signup') {
+    const made = await service.signup(deps, event, body || {});
+    return http.json(200, made.body, { 'Set-Cookie': made.cookies });
+  }
+  if (method === 'POST' && path === '/api/admin/telegram-link') {
+    const master = service.requireMaster(await service.sessionFrom(event, deps));
+    return http.json(200, await service.telegramLinkUrl(deps, master));
   }
   if (method === 'POST' && path === '/api/admin/telegram-widget') {
     const opened = await service.openWidgetSession(deps, body || {});
@@ -141,7 +169,13 @@ function createHandler(deps) {
       // Таймер раз в минуту: досылаем сообщения из outbox.
       try {
         const stats = await service.processOutbox(deps);
-        return { statusCode: 200, body: JSON.stringify({ ok: true, outbox: stats }) };
+        let sweep = null;
+        try {
+          sweep = await service.purgeExpired(deps);
+        } catch (e) {
+          console.error('retention sweep failed');
+        }
+        return { statusCode: 200, body: JSON.stringify({ ok: true, outbox: stats, sweep }) };
       } catch (err) {
         console.error('outbox run failed');
         return { statusCode: 500, body: JSON.stringify({ ok: false }) };
