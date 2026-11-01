@@ -1,6 +1,13 @@
 'use strict';
 
-const cal = require('../../../calendar.js');
+// calendar.js is shared with the browser. In the deployed zip it sits next to
+// index.js (package-function.sh copies it); in the repo it is at the root.
+const cal = (() => {
+  try { return require('../../calendar.js'); } catch (e) {
+    if (e.code !== 'MODULE_NOT_FOUND') throw e;
+    return require('../../../calendar.js');
+  }
+})();
 const { HttpError } = require('../errors');
 
 function dateText(iso, timeZone) {

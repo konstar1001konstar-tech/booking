@@ -16,9 +16,9 @@ resource "yandex_api_gateway" "site" {
   description = "HTTPS-вход: статика из бакета, страницы и API из функции"
 
   spec = templatefile("${path.module}/../../api/openapi.yaml", {
-    function_id    = yandex_function.api[0].id
-    gateway_sa_id  = yandex_iam_service_account.gateway.id
-    bucket         = yandex_storage_bucket.site.bucket
+    function_id   = yandex_function.api[0].id
+    gateway_sa_id = yandex_iam_service_account.gateway.id
+    bucket        = yandex_storage_bucket.site.bucket
   })
 
   dynamic "custom_domains" {

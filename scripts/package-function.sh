@@ -14,9 +14,11 @@ cp "$root/functions/package.json" "$stage/package.json"
 cp "$root/functions/package-lock.json" "$stage/package-lock.json"
 cp -a "$root/functions/src" "$stage/src"
 cp "$root/index.html" "$stage/index.html"
+cp "$root/calendar.js" "$stage/calendar.js"
 mkdir -p "$root/functions/dist"
 (
   cd "$stage"
+  rm -f "$root/functions/dist/function.zip"
   zip -qr "$root/functions/dist/function.zip" .
 )
 echo "$root/functions/dist/function.zip"
