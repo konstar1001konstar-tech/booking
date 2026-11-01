@@ -1,0 +1,23 @@
+{
+  "name": "Онлайн-запись к мастеру",
+  "short_name": "Запись",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fbf8f5",
+  "theme_color": "#fbf8f5",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

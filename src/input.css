@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --c-tg: 91 58 94;
+    --c-ios: 243 233 230;
+    --c-milk: 251 248 245;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  button { -webkit-appearance: none; }
+}
+
+.theme-plum { --c-tg: 91 58 94; }
+.theme-rose { --c-tg: 158 78 98; }
+.theme-wine { --c-tg: 122 46 74; }
+.theme-olive { --c-tg: 90 107 74; }
+.theme-sand { --c-tg: 138 90 58; }
+.theme-ink { --c-tg: 54 58 72; }
+
+.is-hidden { display: none !important; }
+body.scroll-lock { overflow: hidden; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+.modal { visibility: hidden; transition: visibility 0s linear .32s; }
+.modal.open { visibility: visible; transition-delay: 0s; }
+.backdrop { opacity: 0; transition: opacity .3s ease; }
+.modal.open .backdrop { opacity: 1; }
+.sheet { transform: translateY(100%); transition: transform .32s cubic-bezier(.32, .72, 0, 1); }
+.modal.open .sheet { transform: none; }
+
+.check-circle { stroke-dasharray: 166; stroke-dashoffset: 166; animation: draw .6s .1s ease forwards; }
+.check-mark { stroke-dasharray: 48; stroke-dashoffset: 48; animation: draw .35s .6s ease forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+.display { font-family: ui-serif, "New York", Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+.rise { animation: rise .7s cubic-bezier(.2, .7, .2, 1) both; }
+.rise-1 { animation-delay: .1s; }
+.rise-2 { animation-delay: .18s; }
+.rise-3 { animation-delay: .24s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+
+#lb { visibility: hidden; opacity: 0; transition: opacity .25s ease, visibility 0s linear .25s; }
+#lb.open { visibility: visible; opacity: 1; transition-delay: 0s; }
+
+#services-title { scroll-margin-top: 16px; }
+
+.day-off,
+.slot-off {
+  background-image: repeating-linear-gradient(-45deg, transparent, transparent 5px, rgba(42, 32, 36, 0.10) 5px, rgba(42, 32, 36, 0.10) 6px);
+  color: #3f3834;
+  cursor: not-allowed;
+  opacity: 1;
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal, .backdrop, .sheet, #lb { transition: none; }
+  .check-circle, .check-mark { animation: none; stroke-dashoffset: 0; }
+  .rise { animation: none; }
+}
