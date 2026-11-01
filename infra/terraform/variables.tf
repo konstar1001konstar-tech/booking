@@ -60,3 +60,9 @@ variable "relay_ips" {
   default     = "76.76.21.21"
   description = "IPv4 релея через запятую, к которым функция подключается напрямую (имя хоста остаётся для TLS). Из Yandex Cloud новые адреса Vercel 216.198.79.x и 64.29.17.x часто не отвечают, а 76.76.21.21 работает. Пусто — обычный DNS."
 }
+
+variable "webhook_url" {
+  type        = string
+  default     = "https://booking-dun-beta.vercel.app/api/tg-hook"
+  description = "Адрес вебхука бота. По умолчанию — пересылка на Vercel (api/tg-hook.js), потому что серверы Telegram не всегда достают до Yandex Cloud. Пусто — вебхук прямо на адрес сайта (/api/telegram/webhook)."
+}

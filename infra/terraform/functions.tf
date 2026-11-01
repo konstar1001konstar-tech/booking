@@ -31,6 +31,7 @@ resource "yandex_function" "api" {
       RELAY_IPS     = var.relay_url != "" ? var.relay_ips : ""
       COOKIE_SECURE = "1"
       SET_WEBHOOK   = var.set_webhook ? "1" : "0"
+      WEBHOOK_URL   = var.webhook_url
     },
     var.storage == "ydb" ? {
       # Host:port only. ydb-sdk also reads YDB_ENDPOINT itself for every

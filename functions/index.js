@@ -43,7 +43,8 @@ function buildHandler() {
     secrets,
     publicUrl: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
     secureCookie: process.env.COOKIE_SECURE !== '0',
-    setWebhook: process.env.SET_WEBHOOK === '1'
+    setWebhook: process.env.SET_WEBHOOK === '1',
+    webhookUrl: (process.env.WEBHOOK_URL || '').trim()
   });
 }
 

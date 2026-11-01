@@ -383,13 +383,20 @@ async function handleWebhook(deps, event, body) {
 
 let webhookAttempted = false;
 
+// Куда Telegram шлёт обновления. WEBHOOK_URL — пересылка на Vercel
+// (api/tg-hook.js): серверы Telegram не всегда достают до Yandex Cloud.
+// Пусто — прямо на адрес сайта.
+function webhookTarget(deps, base) {
+  return deps.webhookUrl || (base + '/api/telegram/webhook');
+}
+
 async function maybeSetWebhook(deps, base) {
   if (!deps.setWebhook || webhookAttempted) return 'skipped';
   const conf = secretsOf(deps);
   if (!conf.botToken || !conf.webhookSecret || !base) return 'skipped';
   webhookAttempted = true;
   try {
-    await deps.telegram.setWebhook(base + '/api/telegram/webhook', conf.webhookSecret);
+    await deps.telegram.setWebhook(webhookTarget(deps, base), conf.webhookSecret);
     return 'set';
   } catch (e) {
     return 'error';
@@ -412,5 +419,6 @@ module.exports = {
   bookingView,
   issueLoginToken,
   sessionCookie,
-  maybeSetWebhook
+  maybeSetWebhook,
+  webhookTarget
 };
