@@ -34,6 +34,8 @@ upload "$root/calendar.js" "text/javascript; charset=utf-8"
 upload "$root/favicon.svg" "image/svg+xml"
 upload "$root/favicon.ico" "image/x-icon"
 upload "$root/apple-touch-icon.png" "image/png"
+upload "$root/icon-192.png" "image/png"
+upload "$root/icon-512.png" "image/png"
 upload "$root/site.webmanifest" "application/manifest+json"
 upload "$root/robots.txt" "text/plain; charset=utf-8"
 # Шрифт логотипа меняется редко: кэш на месяц.

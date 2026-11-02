@@ -78,6 +78,20 @@ paths:
         bucket: ${bucket}
         object: apple-touch-icon.png
         service_account_id: ${gateway_sa_id}
+  /icon-192.png:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: icon-192.png
+        service_account_id: ${gateway_sa_id}
+  /icon-512.png:
+    get:
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: ${bucket}
+        object: icon-512.png
+        service_account_id: ${gateway_sa_id}
   /site.webmanifest:
     get:
       x-yc-apigateway-integration:

@@ -56,3 +56,24 @@ test('brand: заголовки страниц сервера несут имя 
   assert.match(out, /<title>Анна — онлайн-запись · БьютиЛинк<\/title>/);
   assert.match(out, /og:site_name" content="БьютиЛинк"/);
 });
+
+test('brand: знак «ладонь с листом» вместо старой скрепки, иконки 192/512 в манифесте и шлюзе', () => {
+  const OLD = /M21 27\.5l-3\.2 3\.2|M24 9\.5c\.5 2\.6/;
+  const legal = read('functions/src/legal-pages.js');
+  for (const [name, text] of [['index.html', html], ['favicon.svg', read('favicon.svg')], ['legal-pages.js', legal]]) {
+    assert.doesNotMatch(text, OLD, 'старый знак в ' + name);
+  }
+  assert.match(html, /<symbol id="bl-mark" viewBox="[^"]+"><g stroke="currentColor"/);
+  assert.match(html, /<symbol id="bl-mark-lg"/);
+  assert.match(legal, /class="brand-mark"/);
+  assert.match(read('favicon.svg'), /#5F7A64[\s\S]*#6E3A5E[\s\S]*#F6EEDC/);
+  const manifest = JSON.parse(read('site.webmanifest'));
+  for (const size of [192, 512]) {
+    const file = 'icon-' + size + '.png';
+    assert.ok(manifest.icons.some((i) => i.src === '/' + file && i.sizes === size + 'x' + size), file);
+    const png = fs.readFileSync(path.join(root, file));
+    assert.equal(png.readUInt32BE(16), size);
+    assert.ok(api.includes('  /' + file + ':') && api.includes('object: ' + file), 'нет маршрута ' + file);
+    assert.match(upload, new RegExp(file.replace('.', '\\.')));
+  }
+});
