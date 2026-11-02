@@ -7,6 +7,9 @@
 
 const { escapeHtml } = require('./lib/html');
 
+
+// Знак БьютиЛинк (ладонь с листом), тот же, что #bl-mark в index.html.
+const MARK = '<svg xmlns="http://www.w3.org/2000/svg" class="brand-mark" width="28" height="28" aria-hidden="true" viewBox="50 55 430 430"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M240 102C262 66 326 56 356 88C378 114 360 156 322 158C284 160 254 134 240 102Z" fill="currentColor" fill-opacity=".32" stroke-width="16"/><path d="M148.8 469.5C110.7 416.5 91.6 350.8 108.6 302C121.3 266 159.4 244.8 204 232.1C229.4 223.6 246.4 213 261.2 200.3C278.2 185.4 301.5 200.3 284.5 219.4C269.7 236.3 244.2 253.3 218.8 263.9C204 270.2 206.1 285.1 223 287.2C263.3 291.4 299.4 287.2 326.9 272.4C352.4 257.5 377.8 234.2 396.9 213C413.8 196 439.3 210.9 424.4 234.2C396.9 280.8 346 329.6 286.6 348.7C240 363.5 204 376.2 182.8 408C172.2 425 167.9 446.2 167.9 469.5" fill="none" stroke-width="26"/></g></svg>';
 function ownerLine(owner) {
   const parts = [];
   if (owner.fio) parts.push(owner.fio + ', плательщик налога на профессиональный доход (самозанятый)');
@@ -33,10 +36,11 @@ function page(title, base, sections) {
     + '<meta name="robots" content="index">\n'
     + '<title>' + escapeHtml(title) + ' · БьютиЛинк</title>\n'
     + '<link rel="icon" href="/favicon.svg" type="image/svg+xml">\n'
+    + '<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n'
     + '<link rel="stylesheet" href="/styles.css">\n</head>\n'
     + '<body class="bg-milk text-ink antialiased">\n'
     + '<main class="mx-auto max-w-2xl px-6 pb-16 pt-10">\n'
-    + '<a href="/" class="wordmark text-[24px]"><b>Бьюти</b><i>Линк</i></a>\n'
+    + '<a href="/" class="inline-flex items-center gap-2">' + MARK + '<span class="wordmark text-[24px]"><b>Бьюти</b><i>Линк</i></span></a>\n'
     + '<h1 class="display mt-6 text-[30px] font-semibold leading-tight text-ink">' + escapeHtml(title) + '</h1>\n'
     + body + '\n'
     + '<p class="mt-10 text-xs text-muted"><a class="text-tg underline" href="/privacy">Политика конфиденциальности</a> · '
